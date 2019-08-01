@@ -1,0 +1,86 @@
+//
+// Copyright (c) 2018-2019 AxoMem Pte Ltd.  All rights reserved.
+//
+
+#include "PoolManager.hpp"
+#include "MyApp.hpp"
+#include "RestServer.hpp"
+#include "json.hpp"
+
+using namespace nucleus;
+using nlohmann::json;
+
+MyApp::MyApp()
+{
+    // Init child objects.... note this is wrapped in a transaction from the Manager above
+    Logging::log()->debug("MyApp Persistent Constructor called");
+    p_message = make_persistent<experimental::string>("Hello World");
+
+}
+
+MyApp::~MyApp()
+{
+    Logging::log()->debug("MyApp Persistent Destructor called");
+    pmem::obj::transaction::run(
+            PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+                delete_persistent<experimental::string>(p_message);
+            });
+}
+
+void
+MyApp::Initialize()
+{
+    // child objects->Initialize any child objects here;
+    Logging::log()->trace("MyApp is initializing");
+
+}
+
+void
+MyApp::Start(){
+    Logging::log()->debug("MyApp is starting");
+
+    // Map the APIS
+
+    auto router = RestServer::getRestServer()->getRouter();
+
+    router->http_get(
+            R"(/api/v1/app/message)",
+            [&](auto req, auto params) {
+
+                json j = "{}"_json;
+                j["data"]["message"] = p_message->c_str();
+                j["response"]["status"] = 200;
+
+                return req->create_response()
+                        .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
+                        .set_body( j.dump())
+                        .done();
+            });
+
+    router->http_put(
+            R"(/api/v1/app/message)",
+            [&](auto req, auto params) {
+
+                auto j_req = json::parse(req->body());
+                std::string message_value = j_req["value"];
+                Logging::log()->trace("MyApp Message is being set to {}", message_value);
+                pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+                    p_message->assign(message_value);
+                });
+
+                json j = "{}"_json;
+                j["response"]["status"] = 200;
+                j["response"]["message"] = "Message value updated";
+
+                return req->create_response()
+                        .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
+                        .set_body( j.dump())
+                        .done();
+            });
+
+    // return the router to the RestServer
+    RestServer::getRestServer()->setRouter(std::move(router));
+
+    // App::init(this); RUNTIME App instance should be called here, if needed
+
+}
