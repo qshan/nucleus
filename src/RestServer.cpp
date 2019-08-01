@@ -1,13 +1,11 @@
 //
 // Copyright (c) 2018-2019 AxoMem Pte Ltd.  All rights reserved.
 //
-// TODO - write custom logger that logs info/warning/errors to our logger.
+// TODO - confirm how to bind routes to member functions in client classes, eg MyApp
+// TODO - check out to add .append_header( restinio::http_field_t::access_control_allow_origin, "*" ) across all
+// TODO - how to extract the numeric code from the RESTinio status code functions to use in JSON, or set via numeric
+// TODO - how to write custom logger that logs info/warning/errors to our logger.
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <iterator>
-#include <chrono>
 #include "RestServer.hpp"
 #include "PoolManager.hpp"
 #include "restinio/all.hpp"
@@ -18,9 +16,9 @@ using namespace restinio;
 
 RestServer *RestServer::restEndpoint = nullptr; // Pointer to class instance (singleton)
 
-// TODO - check if this is needed from restinio after finishing routes
 template<typename T>
 std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
+// TODO - check if this is needed from restinio after finishing routes
     if(v) to << *v;
     return to;
 }
@@ -99,7 +97,7 @@ RestServer::getRestServer() {
         Logging::log()->trace("ReST Server Initialised");
     }
     return restEndpoint;
-};
+}
 
 
 void
@@ -116,7 +114,8 @@ RestServer::getRouter(){
         throw std::logic_error("Unable to get Router since its already out for route population or server has started");
     }
     return std::move(router);
-};
+}
+
 void
 RestServer::setRouter(std::unique_ptr<router::express_router_t<>> router_arg) {
     Logging::log()->trace("RestServer setRouter being called");
@@ -144,18 +143,9 @@ RestServer::configureRoutes() {
                         .done();
             });
 
-    //Routes::Get(router, "/api/v1/ready", Routes::bind(&RestServer::Ready, this));
-    //Routes::Get(router, "/api/v1/auth", Routes::bind(&RestServer::Auth, this));
-
-//    Routes::Get(router, "/api/v1/app/:thingBase", Routes::bind(&RestServer::GetThingManagers, this)); // securities, other tms
+    router->non_matched_request_handler(
+            [](auto req){
+                return req->create_response(status_not_found()).connection_close().done();
+            });
 
 }
-
-/*
-void
-RestServer::Auth(const Rest::Request &request, Http::ResponseWriter response) {
-    // TODO - add basic auth here, then check in functions
-    response.send(Http::Code::Ok);
-}
-
-*/

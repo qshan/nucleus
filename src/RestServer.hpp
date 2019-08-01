@@ -25,8 +25,6 @@ using namespace restinio;
         std::unique_ptr<router::express_router_t<>> router;
         static RestServer *restEndpoint; // for Singleton
         void configureRoutes();
-        //void Auth(const Rest::Request &request, Http::ResponseWriter response);
-        //void Ready(const Rest::Request &, Http::ResponseWriter response);
     };
 
 
