@@ -25,7 +25,7 @@ nucleus::NucleusRun(int argc, char *argv[])
     // Load configuration manager first. Needed for log settings
     try {
         config::load_config(argc, argv);
-    } catch (std::exception &exc) {
+    } catch (const std::exception &exc) {
         std::cerr << "Error: " <<  exc.what() << std::endl;
         return exitCode;
     }
@@ -41,16 +41,16 @@ nucleus::NucleusRun(int argc, char *argv[])
         pool = PoolManager::getPoolManager();
         pmem::obj::persistent_ptr<AppManager> appManager = pool->getAppManager();
         appManager->Run();
-    } catch (pmem::transaction_error &err) {
+    } catch (const pmem::transaction_error &err) {
         log->critical("Exception: pmem Transaction Error: {}", err.what());
-    } catch (pmem::transaction_scope_error &tse) {
+    } catch (const pmem::transaction_scope_error &tse) {
         log->critical("Exception: pmem Transaction Scope Error: {} ",tse.what());
-    } catch (pmem::pool_error &pe) {
+    } catch (const pmem::pool_error &pe) {
         log->critical("Exception: pmem PoolManager Error: {}. Check pmem is mounted, space available, permissions are set",
                    pe.what());
-    } catch (std::logic_error &le) {
+    } catch (const std::logic_error &le) {
         log->critical("Exception: Std Logic Error: {}",le.what());
-    } catch (std::exception &exc) {
+    } catch (const std::exception &exc) {
         log->critical("Exception: General: {}", exc.what());
     }
 

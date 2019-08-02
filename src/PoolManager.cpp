@@ -111,7 +111,7 @@ PoolManager::process_signal (int s) {
     if (signal_times == 1) {
         try {
             getPoolManager()->getAppManager()->Exit(s);
-        } catch (std::exception &exc) {
+        } catch (const std::exception &exc) {
             Logging::log()->critical("Exception while attempting to request AppManager Exit {}", exc.what());
             signal_times = 99;
         }

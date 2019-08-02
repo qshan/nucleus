@@ -76,7 +76,7 @@ void RestServer::run() {
         restinio::initiate_shutdown(server);
         restinio_control_thread.join();
     }
-    catch (std::exception& ex) {
+    catch (const std::exception& ex) {
         Logging::log()->error("Exception type {} in ReST server: {}", typeid(ex).name(), ex.what());
     }
     catch (...) {
