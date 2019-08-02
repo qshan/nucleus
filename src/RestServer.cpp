@@ -23,13 +23,11 @@ std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
     return to;
 }
 
-RestServer::RestServer() {
+RestServer::RestServer()
+    : trigger_shutdown{false}
+    , router{std::make_unique<router::express_router_t<>>()} {
 
-    trigger_shutdown = false;
-    using router_t = router::express_router_t<>;
-    router = std::make_unique<router_t>();
     configureRoutes();
-
 }
 
 void RestServer::run() {

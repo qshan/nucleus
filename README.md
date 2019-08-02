@@ -135,7 +135,7 @@ This holds the application specific code, including the transactions required to
 See the [PMDK C++ Bindings Documentation](https://pmem.io/pmdk/cpp_obj/) page as a starting point for writing persistent 
 memory code. It's all C++ with some particular patterns to follow.  
 
-This file also includes the callbacks from the ReST API server to handle the requests. We use RESTinio as the ReST
+This file also includes the callbacks from the ReST API server to handle the requests. We use [RESTinio](https://github.com/Stiffstream/restinio) as the ReST
 server. Here is the [RESTinio documentation](https://stiffstream.com/en/docs.html).
 
 #### main.cpp
