@@ -31,13 +31,13 @@ RestServer::RestServer()
 }
 
 void RestServer::run() {
-    Logging::log()->trace("rest_run is starting ReST Server");
+    Logging::log()->debug("RestServer Run is starting ReST Server");
 
     if (router == nullptr) {
         throw std::logic_error("Unable to start ReST Server - Router is missing. Check it has been returned to Server");
     }
 
-    auto duration = std::chrono::duration<float>(0.5); //0.5 seconds loop duration
+    const std::chrono::milliseconds duration{500}; //0.5 seconds loop duration
     try {
 
         // Define ReST server traits
@@ -72,7 +72,7 @@ void RestServer::run() {
             std::this_thread::yield();
         }
 
-        Logging::log()->info("rest_run is stopping ReST Server");
+        Logging::log()->debug("RestServer Run is stopping ReST Server Instance");
         restinio::initiate_shutdown(server);
         restinio_control_thread.join();
     }
@@ -82,7 +82,7 @@ void RestServer::run() {
     catch (...) {
         Logging::log()->error("ERROR in ReST server - Unknown exception.");
     }
-    Logging::log()->info("ReST Server is shutting down");
+    Logging::log()->info("ReST Server has stopped");
 
 }
 
@@ -101,8 +101,6 @@ RestServer::getRestServer() {
 void
 RestServer::shutdown() {
     trigger_shutdown = true;
-    auto duration = std::chrono::duration<float>(0.5);
-    std::this_thread::sleep_for(duration);
 }
 
 std::unique_ptr<router::express_router_t<>>

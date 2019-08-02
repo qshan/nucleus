@@ -54,8 +54,6 @@ AppManager::Run()
     Logging::log()->debug("AppManager is creating Rest server");
     auto restServer = RestServer::getRestServer(); // this triggers singleton
 
-    // Move this back into RestSystem. Very similar. Set up a loop in rest_run that is triggered by us. Server var kept there.
-
     SetAppState(nucleus::STARTING);
     thingbase1->Start();
 
@@ -74,7 +72,7 @@ AppManager::Run()
     while (appState == nucleus::RUNNING){
         // *** This holds overall run state **************************
         thingbase1->OnUpdate();
-        std::this_thread::sleep_for(std::chrono::duration<float>(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds{1000});
     }
     Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
 
@@ -134,7 +132,7 @@ AppManager::GetApp() {
 void
 AppManager::Exit(const int s) {
 
-    Logging::log()->info("AppManager Exit CTRL SIGNAL Received: {}", s);
+    Logging::log()->debug("AppManager Exit CTRL SIGNAL Received: {}", s);
     Exit("SIGNAL Received");
 }
 
