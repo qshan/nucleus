@@ -10,12 +10,10 @@
 using namespace nucleus;
 using nlohmann::json;
 
-MyApp::MyApp()
+MyApp::MyApp() :
+    p_message{make_persistent<experimental::string>("Hello World")}
 {
-    // Init child objects.... note this is wrapped in a transaction from the Manager above
     Logging::log()->debug("MyApp Persistent Constructor called");
-    p_message = make_persistent<experimental::string>("Hello World");
-
 }
 
 MyApp::~MyApp()
