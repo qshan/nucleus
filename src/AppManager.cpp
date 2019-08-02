@@ -15,10 +15,10 @@ using namespace nucleus;
 using namespace restinio;
 
 AppManager::AppManager()
+    : thingbase1{pmem::obj::make_persistent<MyApp>()}
+    , appState{AppState::NEW}
 {
-    Logging::log()->trace("Constructing (persisting) AppManager");
-    thingbase1 = pmem::obj::make_persistent<MyApp>();
-    appState = AppState::NEW;
+    Logging::log()->trace("Constructed (persisting) AppManager");
 }
 
 AppManager::~AppManager()
