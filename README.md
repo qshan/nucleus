@@ -24,7 +24,7 @@ Key features include:
 * A framework to initialise your application data and state as persistent objects
 * Persistent Memory Pool management to open and close pools
 * Pre-integrated ReST API server, Logging system and conf-based configuration 
-* Applications built on the Nucleus framework have been tested on [Intel® Optane™ DC Persistent Memory](https://www.intel.sg/content/www/xa/en/architecture-and-technology/optane-dc-persistent-memory.html).
+* Applications built on the Nucleus framework have been tested on [Intel&reg; Optane&trade; DC Persistent Memory](https://www.intel.sg/content/www/xa/en/architecture-and-technology/optane-dc-persistent-memory.html).
 
 ## Getting started 
 Firstly, you do not need actual persistent memory to get started! See further below for how to emulate pmem
@@ -131,8 +131,8 @@ including plain C++ types, vectors, arrays, strings and even structs and classes
 You'll need to add code in the .cpp file to create and update these though.
 
 #### MyApp.cpp
-This holds the application specific code, including the transactions required to create new objects and update data. 
-We update the persistent variable in a transaction like following:
+This holds application specific code, including the transactions required to create new objects and update data.
+We update the persistent variables in a transaction:
 
 ```cpp
     pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
