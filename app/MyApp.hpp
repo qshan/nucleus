@@ -21,6 +21,7 @@ public:
 private:
     // These are the persistent memory objects for this application.
     persistent_ptr<string> p_message;
+    p<int> p_update_count;
 
 };
 

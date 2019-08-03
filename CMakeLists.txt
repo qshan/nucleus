@@ -35,9 +35,6 @@ if(NOT PMDK_INCLUDE_DIRS OR NOT PMDK_LIBPMEMOBJ_LIBRARY)
     message(FATAL_ERROR "Unable to find PMDK LIBMEMOBJ - check messages above.")
 endif()
 
-# include_directories(D:/app/vcpkg/installed/x64-windows/include )
-# link_directories(D:/app/vcpkg/packages/pmdk_x64-windows/lib)
-
 file(GLOB APP_CORE ./app/*.cpp)
 file(GLOB SOURCES_CORE ./src/*.cpp)
 file(GLOB SOURCES_LIB ./src/lib/*.cpp)

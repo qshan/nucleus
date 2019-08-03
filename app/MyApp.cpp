@@ -6,12 +6,15 @@
 #include "MyApp.hpp"
 #include "RestServer.hpp"
 #include "json.hpp"
+#include "fmt/format.h"
 
 using namespace nucleus;
 using nlohmann::json;
 
-MyApp::MyApp() :
-    p_message{make_persistent<experimental::string>("Hello World")}
+
+MyApp::MyApp()
+    : p_message{make_persistent<experimental::string>("Hello World")}
+    , p_update_count{0}
 {
     Logging::log()->debug("MyApp Persistent Constructor called");
 }
@@ -46,7 +49,7 @@ MyApp::Start(){
             [&](auto req, auto params) {
 
                 json j = "{}"_json;
-                j["data"]["message"] = p_message->c_str();
+                j["data"]["value"] = p_message->c_str();
                 j["response"]["status"] = 200;
 
                 return req->create_response()
@@ -61,14 +64,15 @@ MyApp::Start(){
 
                 auto j_req = json::parse(req->body());
                 std::string message_value = j_req["value"];
-                Logging::log()->trace("MyApp Message is being set to {}", message_value);
+                Logging::log()->trace("MyApp Message is being set to {}.", message_value);
                 pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
                     p_message->assign(message_value);
+                    p_update_count++;
                 });
 
                 json j = "{}"_json;
                 j["response"]["status"] = 200;
-                j["response"]["message"] = "Message value updated";
+                j["response"]["message"] = fmt::format("Message value updated {} time(s) so far", p_update_count);
 
                 return req->create_response()
                         .append_header( restinio::http_field_t::access_control_allow_origin, "*" )

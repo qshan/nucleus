@@ -97,7 +97,7 @@ You can check Nucleus is running by opening ``http://localhost:8080/api/v1/ready
 
 Now you can test the application by getting ``http://localhost:8080/api/v1/app/message``: 
 ```json
-{"data":{"message":"Hello World"},"response":{"status":200}}
+{"data":{"value":"Hello World"},"response":{"status":200}}
 ```
 
 To update the message, you'll need to use an API test tool. We use the free 
@@ -109,7 +109,7 @@ PUT the following json to ``http://localhost:8080/api/v1/app/message``:
 ```
 And you'll receive:
 ```json
-{"response":{"message":"Message value updated","status":200}}
+{"response":{"message":"Message value updated 1 time(s) so far","status":200}}
 ```
 Now try restarting the app (CTRL-C will stop it) and checking the value via GET again. If you have real persistent 
 memory, you can restart the server and check the value again too!
@@ -120,28 +120,40 @@ Start by reviewing the code in the app directory. You'll see three files:
 
 #### MyApp.hpp
 This defines the base class that Nucleus manages on Persistent Memory. The data objects in here will survive application restarts!
-Specifically, you'll see this variable - it's the one that the API was referencing above:
+Specifically, you'll see these variable - these are used in the API above:
 ```cpp
   private:
     persistent_ptr<string> p_message;
+    p<int> p_update_count;
 ```
 Here you can add any types supported by [libpmemobj-c++](https://github.com/pmem/libpmemobj-cpp), 
-including plain C++ types, vectors, arrays, strings and even structs 
-and classes. You'll need to add code in the .cpp file to create and update these though.
+including plain C++ types, vectors, arrays, strings and even structs and classes.
+You'll need to add code in the .cpp file to create and update these though.
 
- 
 #### MyApp.cpp
 This holds the application specific code, including the transactions required to create new objects and update data. 
-See the [PMDK C++ Bindings Documentation](https://pmem.io/pmdk/cpp_obj/) page as a starting point for writing persistent 
+We update the persistent variable in a transaction like following:
+
+```cpp
+    pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+        p_message->assign(message_value);
+        p_update_count++;
+    });
+```
+This ensures all the data is written to memory properly. In the event of a power failure halfway through, the
+transaction is automatically rolled back on the next restart of the pool.
+
+See the [PMDK C++ Bindings Documentation](https://pmem.io/pmdk/cpp_obj/) page as a starting point for writing persistent
 memory code. It's all C++ with some particular patterns to follow.  
 
-This file also includes the callbacks from the ReST API server to handle the requests. We use [RESTinio](https://github.com/Stiffstream/restinio) as the ReST
+This file also includes the callbacks from the ReST API server to handle the requests.
+We use [RESTinio](https://github.com/Stiffstream/restinio) as the ReST
 server. Here is the [RESTinio documentation](https://stiffstream.com/en/docs.html).
 
 #### main.cpp
-This is the starting point for the app. It simply hands control over to Nucleus and it does all the rest. 
+This is the starting point for the app. Main() hands control to Nucleus and it does all the rest.
 
-Now you can use the app template as a starting point for your own Persistent Memory native applications! :rocket:
+Now you can use this app template as a starting point for your own Persistent Memory native applications! :rocket:
 
 ## Real and Emulated Persistent Memory support
 
