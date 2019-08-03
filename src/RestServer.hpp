@@ -5,6 +5,9 @@
 #ifndef AXONCORE_REST_HPP
 #define AXONCORE_REST_HPP
 
+#define ASIO_HEADER_ONLY 1
+#define ASIO_STANDALONE 1
+
 #include "PoolManager.hpp"
 #include "Nucleus.hpp"
 #include "restinio/all.hpp"
@@ -12,19 +15,31 @@
 using namespace nucleus;
 using namespace restinio;
 
-    class RestServer {
+    class RestServerRouter {
+
     public:
-        explicit RestServer();
-        static RestServer *getRestServer(); // for Singleton
-        void run(); // should be run on own thread
-        void shutdown(); // trigger for shutdown... join thread afterwards
+        explicit RestServerRouter();
         std::unique_ptr<router::express_router_t<>> getRouter();
         void setRouter(std::unique_ptr<router::express_router_t<>>);
+        static RestServerRouter & getRestServerRouter();
     private:
-        bool trigger_shutdown;
         std::unique_ptr<router::express_router_t<>> router;
-        static RestServer *restEndpoint; // for Singleton
-        void configureRoutes();
+    };
+
+    class RestServer {
+
+    public:
+        explicit RestServer( std::unique_ptr<router::express_router_t<>> router);
+        void shutdown(); // will block until server is shut down
+
+    private:
+        using my_traits_t = restinio::traits_t<
+                restinio::asio_timer_manager_t,
+                restinio::null_logger_t,
+                router::express_router_t<>>;
+        using my_server_t = restinio::http_server_t<my_traits_t>;
+        my_server_t my_server;
+        std::thread restinio_control_thread;
     };
 
 

@@ -42,7 +42,7 @@ MyApp::Start(){
 
     // Map the APIS
 
-    auto router = RestServer::getRestServer()->getRouter();
+    auto router = RestServerRouter::getRestServerRouter().getRouter();
 
     router->http_get(
             R"(/api/v1/app/message)",
@@ -81,7 +81,7 @@ MyApp::Start(){
             });
 
     // return the router to the RestServer
-    RestServer::getRestServer()->setRouter(std::move(router));
+    RestServerRouter::getRestServerRouter().setRouter(std::move(router));
 
     // App::init(this); RUNTIME App instance should be called here, if needed
 

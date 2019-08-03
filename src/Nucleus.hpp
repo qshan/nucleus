@@ -31,12 +31,20 @@
 #include "Config.hpp"
 #include "Utilities.hpp"
 
-// App include
-#include "MyApp.hpp"
+#define APPSTATE_ENUM(APS) APS(NEW) APS(INITIALIZING) APS(STARTING) APS(RUNNING) APS(PAUSED) APS(EXITING) \
+                           APS(STOPPED) APS(MAINTENANCE) APS(UNRECOVERABLE)
 
 namespace nucleus{
 
+    MAKE_ENUM_AND_STRINGS(APPSTATE_ENUM, AppState, AppStateNames)
+
     int NucleusRun(int argc, char *argv[]);
+
+    void set_signal_handlers(); // CTRL-C handlers
+    void process_signal (int s);
+#ifdef _WIN32
+    static BOOL WINAPI win_ctrlc_handler (DWORD signal);
+#endif
 
 };
 

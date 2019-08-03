@@ -7,14 +7,11 @@
 // TODO - how to write custom logger that logs info/warning/errors to our logger.
 
 #include "RestServer.hpp"
-#include "PoolManager.hpp"
 #include "restinio/all.hpp"
 #include "json.hpp"
 
 using nlohmann::json;
 using namespace restinio;
-
-RestServer *RestServer::restEndpoint = nullptr; // Pointer to class instance (singleton)
 
 template<typename T>
 std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
@@ -23,106 +20,9 @@ std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
     return to;
 }
 
-RestServer::RestServer()
-    : trigger_shutdown{false}
-    , router{std::make_unique<router::express_router_t<>>()} {
-
-    configureRoutes();
-}
-
-void RestServer::run() {
-    Logging::log()->debug("RestServer Run is starting ReST Server");
-
-    if (router == nullptr) {
-        throw std::logic_error("Unable to start ReST Server - Router is missing. Check it has been returned to Server");
-    }
-
-    const std::chrono::milliseconds duration{500}; //0.5 seconds loop duration
-    try {
-
-        // Define ReST server traits
-        // For debug logging, change null_logger_t to single_threaded_ostream_logger_t
-        using my_traits_t = restinio::traits_t<
-                restinio::asio_timer_manager_t,
-                restinio::null_logger_t,
-                router::express_router_t<>>;
-
-        // Create server instance - this does not run it yet
-        using my_server_t = restinio::http_server_t< my_traits_t >;
-        my_server_t server {
-                restinio::own_io_context(),
-                restinio::server_settings_t< my_traits_t >{}
-                        .port( config::rest_port )
-                        .address( "localhost" )
-                        .request_handler( std::move(router) )
-        };
-
-        Logging::log()->info("ReST Server configured on port {} with {} threads across {} CPUs",
-                             config::rest_port, config::rest_threads, std::thread::hardware_concurrency());
-
-        // Run rest server on separate control thread
-        std::thread restinio_control_thread{ [&server] {
-            restinio::run( restinio::on_thread_pool( config::rest_threads, restinio::skip_break_signal_handling(), server));
-        }
-        };
-
-        // hold the thread here until trigger_shutdown received from external source
-        while (!trigger_shutdown) {
-            std::this_thread::sleep_for(duration);
-            std::this_thread::yield();
-        }
-
-        Logging::log()->debug("RestServer Run is stopping ReST Server Instance");
-        restinio::initiate_shutdown(server);
-        restinio_control_thread.join();
-    }
-    catch (const std::exception& ex) {
-        Logging::log()->error("Exception type {} in ReST server: {}", typeid(ex).name(), ex.what());
-    }
-    catch (...) {
-        Logging::log()->error("ERROR in ReST server - Unknown exception.");
-    }
-    Logging::log()->info("ReST Server has stopped");
-
-}
-
-
-RestServer *
-RestServer::getRestServer() {
-    if (restEndpoint == nullptr) {
-        Logging::log()->debug("ReST Server pointer not yet initialised - creating Rest Server object");
-        restEndpoint = new RestServer();
-        Logging::log()->trace("ReST Server Initialised");
-    }
-    return restEndpoint;
-}
-
-
-void
-RestServer::shutdown() {
-    trigger_shutdown = true;
-}
-
-std::unique_ptr<router::express_router_t<>>
-RestServer::getRouter(){
-    Logging::log()->trace("RestServer GetRouter being called");
-    if (router == nullptr) {
-        throw std::logic_error("Unable to get Router since its already out for route population or server has started");
-    }
-    return std::move(router);
-}
-
-void
-RestServer::setRouter(std::unique_ptr<router::express_router_t<>> router_arg) {
-    Logging::log()->trace("RestServer setRouter being called");
-    if (router != nullptr) {
-        throw std::logic_error("Unable to set Router since its already active. Check logic.");
-    }
-    router = std::move(router_arg);
-}
-
-void
-RestServer::configureRoutes() {
+RestServerRouter::RestServerRouter()
+        : router{std::make_unique<router::express_router_t<>>()}
+{
 
     Logging::log()->trace("ReST Server configuring default routes");
 
@@ -144,4 +44,59 @@ RestServer::configureRoutes() {
                 return req->create_response(status_not_found()).connection_close().done();
             });
 
+}
+
+std::unique_ptr<router::express_router_t<>>
+RestServerRouter::getRouter(){
+    Logging::log()->trace("RestServer GetRouter being called");
+    if (router == nullptr) {
+        throw std::logic_error("Unable to get Router since its already out for route population or server has started");
+    }
+    return std::move(router);
+}
+
+void
+RestServerRouter::setRouter(std::unique_ptr<router::express_router_t<>> router_arg) {
+    Logging::log()->trace("RestServer setRouter being called");
+    if (router != nullptr) {
+        throw std::logic_error("Unable to set Router since its already active. Check logic.");
+    }
+    router = std::move(router_arg);
+}
+
+RestServerRouter &
+RestServerRouter::getRestServerRouter() {
+    static RestServerRouter singleton_instance;
+    return singleton_instance;
+}
+
+// --------------------
+
+RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router)
+    : my_server {
+            restinio::own_io_context(),
+            restinio::server_settings_t< my_traits_t >{}
+                .port( config::rest_port )
+                .address( "localhost" )
+                .request_handler( std::move(router) )
+
+            }
+
+{
+    Logging::log()->info("ReST Server configured on port {} with {} threads across {} CPUs",
+                         config::rest_port, config::rest_threads, std::thread::hardware_concurrency());
+
+    restinio_control_thread = std::thread { [&] {
+        restinio::run( restinio::on_thread_pool( config::rest_threads, restinio::skip_break_signal_handling(), my_server));
+    }
+    };
+
+}
+
+void
+RestServer::shutdown() {
+
+    Logging::log()->info("RestServer is shutting down");
+    restinio::initiate_shutdown(my_server);
+    restinio_control_thread.join();
 }

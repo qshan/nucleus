@@ -5,41 +5,34 @@
 #ifndef NUCLEUS_APPMANAGER_HPP
 #define NUCLEUS_APPMANAGER_HPP
 
-#define APPSTATE_ENUM(APS) APS(NEW) APS(INITIALIZING) APS(STARTING) APS(RUNNING) APS(PAUSED) APS(EXITING) \
-                           APS(STOPPED) APS(MAINTENANCE) APS(UNRECOVERABLE)
-
-#define ASIO_HEADER_ONLY 1
-#define ASIO_STANDALONE 1
-#include "restinio/all.hpp"
 #include "Nucleus.hpp"
+#include "RestServer.hpp"
+
+class MyApp;
 
 namespace nucleus {
 
     class PoolManager; // forward declaration
-
-    MAKE_ENUM_AND_STRINGS(APPSTATE_ENUM, AppState, AppStateNames)
+    struct rootStruct; // forward declaration
 
     class AppManager {
-        friend PoolManager;
+        // friend Nucleus;
 
     public:
         AppManager();
         ~AppManager();
 
         void Run();
-
         pmem::obj::persistent_ptr<MyApp> GetApp();
+        void Exit(int s); // for Signal types - move back to private after setting up Nucleus class def
 
     private:
-        pmem::obj::persistent_ptr<MyApp> thingbase1;
+        pmem::obj::pool<rootStruct> pool_root;
         void SetAppState(AppState state);
         AppState GetAppState();
         std::string GetAppStateName();
         std::string GetAppStateName(AppState);
-        pmem::obj::p<AppState > appState;
-        void resetApp();
         void Update() {};
-        void Exit(int s); // for Signal types
         void Exit(const std::string &reason);
     };
 
