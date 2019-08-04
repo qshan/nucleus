@@ -15,6 +15,7 @@ using nlohmann::json;
 MyApp::MyApp()
     : p_message{make_persistent<experimental::string>("Hello World")}
     , p_update_count{0}
+    , p_customers{make_persistent<Customers>()}
 {
     Logging::log()->debug("MyApp Persistent Constructor called");
 }
@@ -33,7 +34,7 @@ MyApp::Initialize()
 {
     // child objects->Initialize any child objects here;
     Logging::log()->trace("MyApp is initializing");
-
+    p_customers->Initialize();
 }
 
 void
@@ -83,6 +84,7 @@ MyApp::Start(){
     // return the router to the RestServer
     RestServerRouter::getRestServerRouter().setRouter(std::move(router));
 
+    p_customers->Start();
     // App::init(this); RUNTIME App instance should be called here, if needed
 
 }
