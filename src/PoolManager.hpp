@@ -23,7 +23,7 @@ class PoolManager {
 
 public:
     ~PoolManager();
-    static PoolManager *getPoolManager();
+    static PoolManager &getPoolManager();
     pmem::obj::pool<rootStruct> &getPoolForTransaction();
 
 private:

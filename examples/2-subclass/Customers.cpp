@@ -22,7 +22,7 @@ Customers::~Customers()
 {
     Logging::log()->debug("CustomerPersistent Destructor called");
     pmem::obj::transaction::run(
-            PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+            PoolManager::getPoolManager().getPoolForTransaction(), [&] {
                 delete_persistent<pmem::obj::experimental::vector<Customer>>(p_customers);
             });
 }

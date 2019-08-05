@@ -14,8 +14,6 @@
 
 namespace nucleus {
 
-PoolManager *PoolManager::poolManager = nullptr; // Global pointer to PoolManager Singleton
-
 PoolManager::PoolManager(const std::string &fileName)
 {
     Logging::log()->debug("Creating PoolManager with root pool {}", fileName);
@@ -39,14 +37,10 @@ PoolManager::~PoolManager()
 
 }
 
-PoolManager *
-PoolManager::getPoolManager()
-{
-    if (poolManager == nullptr) {
-        Logging::log()->debug("PoolManager memory pointer not yet initialized - creating PoolManager object");
-        poolManager = new PoolManager(config::pool_main_file);
-    }
-    return poolManager;
+PoolManager &
+PoolManager::getPoolManager() {
+    static PoolManager manager(config::pool_main_file);  // Singleton
+    return manager;
 }
 
 pmem::obj::pool<rootStruct> &

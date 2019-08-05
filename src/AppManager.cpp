@@ -20,10 +20,10 @@ AppManager::AppManager()
 {
     Logging::log()->trace("Constructed (persisting) AppManager");
 
-    pool_root = PoolManager::getPoolManager()->poolRoot;
+    pool_root = PoolManager::getPoolManager().poolRoot;
     if (pool_root.root()->thingbase1 == nullptr) {
         Logging::log()->debug("AppManager persistent object not yet initialized - persisting AppManager Object");
-        pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+        pmem::obj::transaction::run(PoolManager::getPoolManager().getPoolForTransaction(), [&] {
             pool_root.root()->thingbase1 = pmem::obj::make_persistent<MyApp>();
             pool_root.root()->appState = AppState::NEW;
         });
@@ -90,7 +90,7 @@ void
 AppManager::SetAppState(AppState state)
 {
     // TODO - basic state machine here to prevent incorrect state transitions, and make threadsafe
-    pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+    pmem::obj::transaction::run(PoolManager::getPoolManager().getPoolForTransaction(), [&] {
         Logging::log()->trace("App State is being set to {} (previous state {})", GetAppStateName(state), GetAppStateName());
         pool_root.root()->appState = state; });
 }
