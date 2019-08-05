@@ -7,8 +7,7 @@
 
 #include "Nucleus.hpp"
 #include "RestServer.hpp"
-
-class MyApp;
+#include "MyApp.hpp"
 
 namespace nucleus {
 

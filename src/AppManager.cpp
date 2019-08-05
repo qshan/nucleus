@@ -11,7 +11,6 @@
 #include "PoolManager.hpp"
 #include "RestServer.hpp"
 #include "json.hpp"
-#include "MyApp.hpp"
 
 using namespace nucleus;
 using namespace restinio;

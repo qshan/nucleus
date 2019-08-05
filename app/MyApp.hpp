@@ -4,7 +4,6 @@
 #ifndef MYAPP_H
 #define MYAPP_H
 #include "Nucleus.hpp"
-#include "Customers.hpp"
 
 using namespace pmem::obj;
 using namespace pmem::obj::experimental;
@@ -23,7 +22,6 @@ private:
     // These are the persistent memory objects for this application.
     persistent_ptr<string> p_message;
     p<int> p_update_count;
-    persistent_ptr<Customers> p_customers;
 
 };
 
