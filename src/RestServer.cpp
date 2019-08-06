@@ -1,6 +1,18 @@
-//
-// Copyright (c) 2018-2019 AxoMem Pte Ltd.  All rights reserved.
-//
+// AxoMem Nucleus - for developing Persistent Applications
+// Copyright (C) 2018-2019 AxoMem Pte Ltd.
+
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License Version 2 (only)
+// as published by the Free Software Foundation.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License Version 2 for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, see http://www.gnu.org/licenses/
+
 // TODO - confirm how to bind routes to member functions in client classes, eg MyApp
 // TODO - check out to add .append_header( restinio::http_field_t::access_control_allow_origin, "*" ) across all
 // TODO - how to extract the numeric code from the RESTinio status code functions to use in JSON, or set via numeric

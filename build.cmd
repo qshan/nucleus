@@ -1,7 +1,19 @@
 @echo off
-::
-:: Copyright (c) 2018-2019 AxoMem Pte Ltd.  All rights reserved.
-::
+:: AxoMem Nucleus - for developing Persistent Applications
+:: Copyright (C) 2018-2019 AxoMem Pte Ltd.
+
+:: This program is free software; you can redistribute it and/or modify
+:: it under the terms of the GNU General Public License Version 2 (only)
+:: as published by the Free Software Foundation.
+
+:: This program is distributed in the hope that it will be useful,
+:: but WITHOUT ANY WARRANTY; without even the implied warranty of
+:: MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+:: GNU General Public License Version 2 for more details.
+
+:: You should have received a copy of the GNU General Public License
+:: along with this program; if not, see http://www.gnu.org/licenses/
+
 :: This is an example cmake-based build script for Windows. Current assumed environment:
 ::
 ::     Cmake - https://cmake.org/download/
@@ -9,7 +21,7 @@
 ::
 :: Copy and customise to your environment. Any cmd files starting with build- are ignored by git
 :: Please contribute back any substantial changes, bugs, issues or success with new versions of Visual Studio
-::
+
 IF %0 EQU "%~dpnx0" GOTO DOUBLECLICK_ERR
 IF "%VCINSTALLDIR%!"==! GOTO TOOLS_ERR
 
