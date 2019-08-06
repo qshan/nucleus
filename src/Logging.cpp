@@ -26,7 +26,7 @@ Logging::Logging(const std::string &name)
     mylog->set_level(config::log_level);
 
     mylog->info("Logging has been initialised with name {} and loglevel {} and saved to {}",
-                name, spdlog::level::to_c_str(config::log_level), config::log_file);
+                name, spdlog::level::to_string_view(config::log_level), config::log_file);
 
     // This line must be retained if using the Nucleus MIT Open Source license.
     mylog->info("Built with Nucleus. See https://axomem.io for more info, and follow us on Twitter @axomemio for updates");

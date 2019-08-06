@@ -54,13 +54,14 @@ if(NOT PMDK_INCLUDE_DIRS OR NOT PMDK_LIBPMEMOBJ_LIBRARY)
 endif()
 
 file(GLOB SOURCES_CORE ./src/*.cpp)
-file(GLOB SOURCES_LIB ./src/lib/*.cpp)
-file(GLOB SOURCES_SPDLOG ./src/lib/spdlog/*.cpp)
-file(GLOB SOURCES_HTTP_PARSER ./src/lib/http_parser/http_parser.c)
+set (CORE_INCLUDE_DIRS ./src)
 
-add_executable(nucleus ${SOURCES_APP} ${SOURCES_CORE} ${SOURCES_LIB} ${SOURCES_SPDLOG} ${SOURCES_HTTP_PARSER})
+file(GLOB SOURCES_EXT ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
+set (EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
 
-target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${APP_INCLUDE_DIRS} ./src ./src/lib ./src/lib/http_parser)
+add_executable(nucleus ${SOURCES_APP} ${SOURCES_CORE} ${SOURCES_EXT} )
+
+target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${CORE_INCLUDE_DIRS} ${EXT_INCLUDE_DIRS} ${APP_INCLUDE_DIRS})
 target_link_libraries(nucleus ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
