@@ -92,12 +92,12 @@ Press CTRL-C once to shutdown normally. May require up to 3 presses in abnormal 
 You can check Nucleus is running by opening ``http://localhost:8080/api/v1/ready`` in your browser. You should see:
 ```json
 {"data":{},
- "response":{"message":"Ready command received successfully","status":200}}
+ "response":{"message":"Ready command received successfully"}}
 ```
 
 Now you can test the application by getting ``http://localhost:8080/api/v1/app/message``: 
 ```json
-{"data":{"value":"Hello World"},"response":{"status":200}}
+{"data":{"value":"Hello World"}}
 ```
 
 To update the message, you'll need to use an API test tool. We use the free 
@@ -109,7 +109,7 @@ PUT the following json to ``http://localhost:8080/api/v1/app/message``:
 ```
 And you'll receive:
 ```json
-{"response":{"message":"Message value updated 1 time(s) so far","status":200}}
+{"response":{"message":"Message value updated 1 time(s) so far"}}
 ```
 Now try restarting the app (CTRL-C will stop it) and checking the value via GET again. If you have real persistent 
 memory, you can restart the server and check the value again too!

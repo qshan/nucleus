@@ -61,7 +61,6 @@ MyApp::Start(){
 
                 json j = "{}"_json;
                 j["data"]["value"] = p_message->c_str();
-                j["response"]["status"] = 200;
 
                 return req->create_response()
                         .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
@@ -82,7 +81,6 @@ MyApp::Start(){
                 });
 
                 json j = "{}"_json;
-                j["response"]["status"] = 200;
                 j["response"]["message"] = fmt::format("Message value updated {} time(s) so far", p_update_count);
 
                 return req->create_response()

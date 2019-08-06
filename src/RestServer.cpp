@@ -43,7 +43,6 @@ RestServerRouter::RestServerRouter()
             [](auto req, auto params) {
                 json j = "{}"_json;
                 j["data"] = "{}"_json;
-                j["response"]["status"] = 200;
                 j["response"]["message"] = "Ready command received successfully";
                 return req->create_response()
                         .append_header( restinio::http_field_t::access_control_allow_origin, "*" )

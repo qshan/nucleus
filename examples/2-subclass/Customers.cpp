@@ -63,7 +63,6 @@ Customers::Start(){
                 // TODO - iterate the customer vector, listing customers
 
                 //j["data"]["value"] = p_message->c_str();
-                j["response"]["status"] = 200;
 
                 return req->create_response()
                         .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
