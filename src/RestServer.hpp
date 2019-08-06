@@ -2,13 +2,12 @@
 // Copyright (c) 2018-2019 AxoMem Pte Ltd.  All rights reserved.
 //
 
-#ifndef AXONCORE_REST_HPP
-#define AXONCORE_REST_HPP
+#ifndef NUCLEUS_REST_HPP
+#define NUCLEUS_REST_HPP
 
 #define ASIO_HEADER_ONLY 1
 #define ASIO_STANDALONE 1
 
-#include "PoolManager.hpp"
 #include "Nucleus.hpp"
 #include "restinio/all.hpp"
 
@@ -43,4 +42,4 @@ using namespace restinio;
     };
 
 
-#endif //AXONCORE_REST_HPP
+#endif //NUCLEUS_REST_HPP

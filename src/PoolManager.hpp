@@ -4,17 +4,19 @@
 #ifndef NUCLEUS_POOL_H
 #define NUCLEUS_POOL_H
 
-#include <string>
 #include "Nucleus.hpp"
+#define LAYOUT_NAME "myapp_v0.0.1"
 
 class MyApp;
 
 namespace nucleus {
+
     class AppManager;
 
-struct rootStruct {
-    pmem::obj::persistent_ptr<MyApp> thingbase1;
-    pmem::obj::p<AppState > appState;
+struct NucleusPool {
+    // This is the root structure of the pool file
+    pmem::obj::persistent_ptr<MyApp> app;
+    pmem::obj::p<AppState > app_state;
 };
 
 class PoolManager {
@@ -24,12 +26,11 @@ class PoolManager {
 public:
     ~PoolManager();
     static PoolManager &getPoolManager();
-    pmem::obj::pool<rootStruct> &getPoolForTransaction();
+    pmem::obj::pool<NucleusPool> &getPoolForTransaction();
 
 private:
-    pmem::obj::pool<rootStruct> poolRoot;
+    pmem::obj::pool<NucleusPool> nucleus_pool;
     explicit PoolManager(const std::string &name);
-    static PoolManager *poolManager;
     PoolManager(const PoolManager &);
     PoolManager &operator=(const PoolManager &);
 

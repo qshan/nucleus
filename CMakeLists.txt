@@ -1,6 +1,24 @@
 cmake_minimum_required(VERSION 3.3)
 project(nucleus)
 
+# ------------------------------------------------------------------------------------
+# These set the App directories to compile with Nucleus
+set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/1-hello_world")
+
+# Comment out the above and use this for your own app
+# set (APP_DIR "${CMAKE_SOURCE_DIR}/myapp")
+# ------------------------------------------------------------------------------------
+if (EXISTS "${APP_DIR}/main.cpp")
+    message(STATUS "Using ${APP_DIR}/main.cpp for compilation. Be sure to delete your pmem file too.")
+    # https://github.com/axomem/nucleus-alpha/issues/19 - layout issue
+else()
+    message(FATAL_ERROR "Unable to file ${APP_DIR}/main.cpp needed for compiling the example or your app.")
+endif()
+
+file(GLOB SOURCES_APP ${APP_DIR}/*.cpp)
+set(APP_INCLUDE_DIRS ${APP_DIR})
+
+
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -35,15 +53,14 @@ if(NOT PMDK_INCLUDE_DIRS OR NOT PMDK_LIBPMEMOBJ_LIBRARY)
     message(FATAL_ERROR "Unable to find PMDK LIBMEMOBJ - check messages above.")
 endif()
 
-file(GLOB APP_CORE ./app/*.cpp)
 file(GLOB SOURCES_CORE ./src/*.cpp)
 file(GLOB SOURCES_LIB ./src/lib/*.cpp)
 file(GLOB SOURCES_SPDLOG ./src/lib/spdlog/*.cpp)
 file(GLOB SOURCES_HTTP_PARSER ./src/lib/http_parser/http_parser.c)
 
-add_executable(nucleus ${APP_CORE} ${SOURCES_CORE} ${SOURCES_LIB} ${SOURCES_SPDLOG} ${SOURCES_HTTP_PARSER})
+add_executable(nucleus ${SOURCES_APP} ${SOURCES_CORE} ${SOURCES_LIB} ${SOURCES_SPDLOG} ${SOURCES_HTTP_PARSER})
 
-target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ./app ./src ./src/lib ./src/lib/http_parser)
+target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${APP_INCLUDE_DIRS} ./src ./src/lib ./src/lib/http_parser)
 target_link_libraries(nucleus ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)

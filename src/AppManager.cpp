@@ -4,8 +4,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <ctime>
-#include <sstream>
 #include <thread>
 #include "AppManager.hpp"
 #include "PoolManager.hpp"
@@ -18,21 +16,21 @@ using nlohmann::json;
 
 AppManager::AppManager()
 {
-    Logging::log()->trace("Constructed (persisting) AppManager");
+    Logging::log()->trace("Constructing AppManager");
 
-    pool_root = PoolManager::getPoolManager().poolRoot;
-    if (pool_root.root()->thingbase1 == nullptr) {
-        Logging::log()->debug("AppManager persistent object not yet initialized - persisting AppManager Object");
+    nucleus_pool = PoolManager::getPoolManager().nucleus_pool;
+    if (nucleus_pool.root()->app == nullptr) {
+        Logging::log()->debug("MyApp persistent object not yet initialized - persisting MyApp Object");
         pmem::obj::transaction::run(PoolManager::getPoolManager().getPoolForTransaction(), [&] {
-            pool_root.root()->thingbase1 = pmem::obj::make_persistent<MyApp>();
-            pool_root.root()->appState = AppState::NEW;
+            nucleus_pool.root()->app = pmem::obj::make_persistent<MyApp>();
+            nucleus_pool.root()->app_state = AppState::NEW;
         });
     }
 
 }
 
 AppManager::~AppManager()
-= default;
+= default; // at present we don't support deleting app
 
 void
 AppManager::Run()
@@ -47,7 +45,7 @@ AppManager::Run()
     if (GetAppState() == nucleus::NEW) {
         Logging::log()->info("AppManager: App initializing after first persistence");
         SetAppState(nucleus::INITIALIZING);
-        pool_root.root()->thingbase1->Initialize();
+        nucleus_pool.root()->app->Initialize();
     }
 
     if (GetAppState() != nucleus::INITIALIZING && GetAppState() != nucleus::STOPPED ) {
@@ -57,7 +55,7 @@ AppManager::Run()
     Logging::log()->debug("AppManager is creating Rest server");
 
     SetAppState(nucleus::STARTING);
-    pool_root.root()->thingbase1->Start();
+    nucleus_pool.root()->app->Start();
 
     RestServer rest_server {RestServerRouter::getRestServerRouter().getRouter()};
 
@@ -71,10 +69,8 @@ AppManager::Run()
     std::cout << "***" << std::endl;
     std::cout << std::endl;
 
-    auto my_app = pool_root.root()->thingbase1;
     while (GetAppState() == nucleus::RUNNING){
         // *** This holds overall run state **************************
-        my_app->OnUpdate();
         std::this_thread::sleep_for(std::chrono::milliseconds{1000});
     }
     Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
@@ -92,19 +88,19 @@ AppManager::SetAppState(AppState state)
     // TODO - basic state machine here to prevent incorrect state transitions, and make threadsafe
     pmem::obj::transaction::run(PoolManager::getPoolManager().getPoolForTransaction(), [&] {
         Logging::log()->trace("App State is being set to {} (previous state {})", GetAppStateName(state), GetAppStateName());
-        pool_root.root()->appState = state; });
+        nucleus_pool.root()->app_state = state; });
 }
 
 nucleus::AppState
 AppManager::GetAppState()
 {
-    return pool_root.root()->appState;
+    return nucleus_pool.root()->app_state;
 }
 
 std::string
 AppManager::GetAppStateName()
 {
-    return AppStateNames[pool_root.root()->appState];
+    return AppStateNames[nucleus_pool.root()->app_state];
 }
 
 std::string
@@ -116,7 +112,7 @@ AppManager::GetAppStateName(AppState state)
 pmem::obj::persistent_ptr<MyApp>
 AppManager::GetApp() {
 
-    return pool_root.root()->thingbase1;
+    return nucleus_pool.root()->app;
 }
 
 void

@@ -39,3 +39,6 @@ build/*
 *.log
 /build-*.cmd
 /build-*.sh
+
+# USER APP
+/myapp/*

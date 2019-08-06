@@ -4,22 +4,20 @@
 // TODO - keep track of start errors and add to logging once started
 // TODO - change const char* to strings
 
-#include <sstream>
 #include <iostream>
 #include <regex>
-#include "Logging.hpp"
 #include "ini.hpp"
 #include "Config.hpp"
 #include "spdlog/spdlog.h"
 
 namespace config
 {
-// These should be default PROD settings.
+// These are default settings.
 
-    spdlog::level::level_enum log_level = spdlog::level::info;
+    spdlog::level::level_enum log_level = spdlog::level::debug;
     std::string log_file = "./nucleus.log";
     size_t pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
-    std::string pool_main_file = "./nucleus.pmem";
+    std::string pool_main_file = "./nucleus.pmem"; // note - replaced below if argv
 
     int rest_port = 8080;
     int rest_threads = 4;

@@ -44,7 +44,3 @@ MyApp::Start(){
 
 }
 
-void
-MyApp::OnUpdate(){
-    p_customers->OnUpdate();
-}

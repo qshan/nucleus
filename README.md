@@ -36,22 +36,22 @@ other distributions running with not too much pain.
 
 Nucleus can also be built on Windows via cmake, vcpkg and Visual Studio. Minimum is Microsoft "Visual Studio 15 2017 Win64". 
 
-### Dependencies requiring building
+### Dependencies requiring building or installing
 
-At present there are the main dependencies:
+At present there are these main dependencies:
 * [Persistent Memory Development Kit (PMDK)](https://github.com/pmem/pmdk) minimum v1.6
 * [NDCTL](https://github.com/pmem/ndctl) minimum v60.1 
 
 On Linux, you may need to build PMDK from sources depending on your distribution age.  
 
-There are utility scripts ```setup-pmdk.sh``` and ```build-pmdk.sh```  in ```utils/``` that can help setup or build these pre-requisites for Linux.
+There are utility scripts ```setup-pmdk.sh``` and ```build-pmdk.sh```  in ```utils/``` that can help set up or build these pre-requisites for Fedora.
 
 For Windows, you can install PMDK via vcpkg. See the instructions at the bottom
 of [this page](https://github.com/pmem/libpmemobj-cpp).  
 
-### Building the Nucleus default app
+### Building the Nucleus "Hello World" app
 
-On Linux this builds Nucleus our "hello world" starter app in the ``app/MyApp.*`` files:
+On Linux this builds Nucleus our "hello world" example app in the ``examples/1-hellow_world`` directory:
 
 ```bash
 mkdir build
@@ -62,7 +62,7 @@ make
 
 The default build type is Debug. Specify build type ``cmake -DCMAKE_BUILD_TYPE=Release ..`` for a Release build.
 
-On Windows, there is a build helper called ```build.cmd``` that can help you build with cmake 
+On Windows, there is a build helper called ```build.cmd``` that can help you build the example with cmake.
 
 ### Running
 The binary executable will be written to ``./build/bin/nucleus``. 
@@ -153,7 +153,19 @@ server. Here is the [RESTinio documentation](https://stiffstream.com/en/docs.htm
 #### main.cpp
 This is the starting point for the app. Main() hands control to Nucleus and it does all the rest.
 
-Now you can use this app template as a starting point for your own Persistent Memory native applications! :rocket:
+### Other examples 
+We've started putting more examples into the /examples dir. To build these you can edit the 
+"CMakeLists.txt" to point to the example you want. Then delete the build directory and rerun cmake. 
+
+### Your own app
+You can use this the "Hello World" template as a starting point for your own Persistent Memory native applications! :rocket:
+
+1. Create a directory for your new app. Two options are:
+  - Create a directory within the source tree called ``./myapp`` - any files here will be .gitignored and you can even put your own git repository here
+  - Create a directory outside the source tree 
+2. Update the CMakeLists.txt file in Nucleus to point to the new directory (near the top)
+3. Copy one of the examples into your new directory
+4. Delete the build directory in Nucleus and rerun the cmake process 
 
 ## Real and Emulated Persistent Memory support
 

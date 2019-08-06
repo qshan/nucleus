@@ -6,6 +6,7 @@
 #define NUCLEUS_APPMANAGER_HPP
 
 #include "Nucleus.hpp"
+#include "PoolManager.hpp"
 #include "RestServer.hpp"
 #include "MyApp.hpp"
 
@@ -26,12 +27,11 @@ namespace nucleus {
         void Exit(int s); // for Signal types - move back to private after setting up Nucleus class def
 
     private:
-        pmem::obj::pool<rootStruct> pool_root;
+        pmem::obj::pool<NucleusPool> nucleus_pool;
         void SetAppState(AppState state);
         AppState GetAppState();
         std::string GetAppStateName();
         std::string GetAppStateName(AppState);
-        void Update() {};
         void Exit(const std::string &reason);
     };
 

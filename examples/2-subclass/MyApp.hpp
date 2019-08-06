@@ -17,7 +17,6 @@ public:
 
     void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
     void Start();       // this happens each time the applications runs
-    void OnUpdate(); // this is called several times per second for regular processing
 
 private:
     // These are the persistent memory objects for this class.
