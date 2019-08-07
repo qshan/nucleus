@@ -104,10 +104,12 @@ RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router)
 
 }
 
-void
-RestServer::shutdown() {
+RestServer::~RestServer() {
 
-    Logging::log()->info("RestServer is shutting down");
+    Logging::log()->info("RestServer is being shut down");
+
     restinio::initiate_shutdown(my_server);
     restinio_control_thread.join();
+
 }
+

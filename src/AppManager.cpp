@@ -86,8 +86,6 @@ AppManager::Run()
     }
     Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
 
-    rest_server.shutdown();
-
     SetAppState(nucleus::STOPPED);
     Logging::log()->info("AppManager Run now exiting with AppState {}", GetAppStateName());
 

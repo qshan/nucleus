@@ -32,6 +32,7 @@ using namespace restinio;
         std::unique_ptr<router::express_router_t<>> getRouter();
         void setRouter(std::unique_ptr<router::express_router_t<>>);
         static RestServerRouter & getRestServerRouter();
+
     private:
         std::unique_ptr<router::express_router_t<>> router;
     };
@@ -40,7 +41,7 @@ using namespace restinio;
 
     public:
         explicit RestServer( std::unique_ptr<router::express_router_t<>> router);
-        void shutdown(); // will block until server is shut down
+        ~RestServer();
 
     private:
         using my_traits_t = restinio::traits_t<
