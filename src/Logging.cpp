@@ -31,7 +31,7 @@ Logging::Logging(const std::string &name)
 
     auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(config::log_file, 1024*1024 * 20, 10);
     file_sink->set_level(spdlog::level::trace);
-    std::vector<spdlog::sink_ptr> sinks {console_sink, file_sink};
+    std::array<spdlog::sink_ptr, 2> sinks {console_sink, file_sink};
 
     mylog = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
     mylog->set_level(config::log_level);
