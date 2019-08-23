@@ -22,6 +22,7 @@
 #include "Config.hpp"
 #include "spdlog/spdlog.h"
 
+namespace nucleus {
 namespace config
 {
 // These are default settings.
@@ -88,4 +89,5 @@ int config::handler(void* user, const char* section, const char* name, const cha
     }
 
     return matched;
+}
 }

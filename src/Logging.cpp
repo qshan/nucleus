@@ -21,6 +21,8 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+using namespace nucleus;
+
 Logging *Logging::logger = nullptr; // Singleton model - sets the internal private member
 std::shared_ptr<spdlog::logger> Logging::mylog = nullptr;
 

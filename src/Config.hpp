@@ -19,6 +19,7 @@
 #include <string>
 #include "spdlog/spdlog.h"
 
+namespace nucleus {
 namespace config
 {
     bool load_config(int argc, char *argv[]);
@@ -40,6 +41,6 @@ namespace config
     extern int rest_threads;
 
 }
-
+}
 
 #endif //NUCLEUS_CONFIG_HPP
