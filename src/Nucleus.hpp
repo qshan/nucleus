@@ -13,50 +13,129 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-#ifndef NUCLEUS_PLATFORM_HPP
-#define NUCLEUS_PLATFORM_HPP
+#ifndef NUCLEUS_HPP
+#define NUCLEUS_HPP
 
-// PMDK #WIN64 issue - check on linux?
-#define PMEMOBJ_OFFSETOF_WA
+#include "Platform.hpp"
+#include "AppManager.hpp"
 
-// Restinio & ASIO.. This is to avoid ASIO Winsock already included issue
-#define WIN32_LEAN_AND_MEAN
+namespace nucleus {
 
-// Issue with FMT - spdlog and restinio both use?
-#define FMT_HEADER_ONLY
+template <class M>
+class Nucleus {
 
-// PMDK common includes
-#include <libpmemobj++/persistent_ptr.hpp>
-#include <libpmemobj++/pool.hpp>
-#include <libpmemobj++/transaction.hpp>
-#include <libpmemobj++/p.hpp>
-#include <libpmemobj++/make_persistent.hpp>
-#include <libpmemobj++/make_persistent_array.hpp>
-#include <libpmemobj++/transaction.hpp>
-#include <libpmemobj++/experimental/vector.hpp>
-#include <libpmemobj++/experimental/concurrent_hash_map.hpp>
-#include <libpmemobj++/experimental/string.hpp>
+    static AppManager<M> *p_app_manager ;
+    static int signal_times;
 
-// Nucleus common includes
-#include "Logging.hpp"
-#include "Config.hpp"
-#include "Utilities.hpp"
+public:
 
-#define APPSTATE_ENUM(APS) APS(NEW) APS(INITIALIZING) APS(STARTING) APS(RUNNING) APS(PAUSED) APS(EXITING) \
-                           APS(STOPPED) APS(MAINTENANCE) APS(UNRECOVERABLE)
+    Nucleus (int argc, char *argv[]) {
 
-namespace nucleus{
+        // Load configuration manager first. Needed for log settings
+        try {
+            config::load_config(argc, argv);
+        } catch (const std::exception &exc) {
+            //std::cerr << "Error: " << exc.what() << std::endl;
+            throw std::runtime_error(fmt::format("Error loading configuration: {}", exc.what()));
+        }
 
-    MAKE_ENUM_AND_STRINGS(APPSTATE_ENUM, AppState, AppStateNames)
+        // Load Logging Manager
+        Logging::init();
 
-    int NucleusRun(int argc, char *argv[]);
+    }
 
-    void set_signal_handlers(); // CTRL-C handlers
-    void process_signal (int s);
-#ifdef _WIN32
-    static BOOL WINAPI win_ctrlc_handler (DWORD signal);
-#endif
+    int Run()
+    {
+        int exitCode = EXIT_FAILURE;
+        auto log = Logging::log();
+        log->info("Nucleus is starting");
+
+        try {
+
+            auto app_manager = AppManager<M>();
+
+            p_app_manager = &app_manager;
+
+            set_signal_handlers(); // to handle CTRL-C and make sure we can close pool
+
+            app_manager.Run();
+
+        } catch (const pmem::transaction_error &err) {
+            log->critical("Exception: pmem Transaction Error: {}", err.what());
+        } catch (const pmem::transaction_scope_error &tse) {
+            log->critical("Exception: pmem Transaction Scope Error: {} ",tse.what());
+        } catch (const pmem::pool_error &pe) {
+            log->critical("Exception: pmem PoolManager Error: {}. Check pmem is mounted, space available, permissions are set",
+                          pe.what());
+        } catch (const std::logic_error &le) {
+            log->critical("Exception: Std Logic Error: {}",le.what());
+        } catch (const std::exception &exc) {
+            log->critical("Exception: General: {}", exc.what());
+        }
+
+        log->info("Exiting Nucleus with exit status {}", exitCode);
+        return exitCode;
+    }
+
+    void set_signal_handlers(){
+        // Install CTRL-C handler to try exit gracefully.
+        // TODO - install handlers for other signals, eg if running a daemon or windows service
+
+    #ifndef _WIN32
+        // TODO - store previous handler information and restore?
+        struct sigaction custom_handler = {{process_signal}};
+        sigemptyset(&custom_handler.sa_mask);
+        custom_handler.sa_flags = 0;
+        sigaction(SIGINT, &custom_handler, nullptr);
+    #else
+        if (!SetConsoleCtrlHandler( (PHANDLER_ROUTINE) win_ctrlc_handler, TRUE)) {
+            Logging::log()->warn("WARNING: Could not set CTRL-C handler");
+        }
+    #endif
+
+    }
+
+    #ifdef _WIN32
+    static BOOL WINAPI win_ctrlc_handler (DWORD signal) {
+        if (signal != CTRL_C_EVENT && signal != CTRL_CLOSE_EVENT) return FALSE;
+        process_signal(1);
+        return TRUE;
+    }
+    #endif
+
+    static void process_signal (int s) {
+
+        signal_times++;
+        if (signal_times == 1) {
+            try {
+                p_app_manager->Exit(s);
+            } catch (const std::exception &exc) {
+                Logging::log()->critical("Exception while attempting to request AppManager Exit {}", exc.what());
+                signal_times = 99;
+            }
+        }
+
+        if (signal_times > 2) {
+            Logging::log()->critical("Received multiple interrupts. Restoring default handler. Press once more to exit");
+            #ifndef _WIN32
+                struct sigaction default_action = {{SIG_DFL}};
+                sigaction(SIGINT, &default_action, nullptr);
+            #else
+                SetConsoleCtrlHandler(NULL, FALSE);
+            #endif
+        }
+
+    };
 
 };
 
-#endif //NUCLEUS_PLATFORM_HPP
+// These initialise static members for the templated class
+
+template< class M >
+int Nucleus<M>::signal_times = 0;
+
+template< class M >
+AppManager<M> *Nucleus<M>::p_app_manager = nullptr;
+
+}
+#endif //NUCLEUS_HPP

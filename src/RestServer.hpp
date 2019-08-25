@@ -19,10 +19,9 @@
 #define ASIO_HEADER_ONLY 1
 #define ASIO_STANDALONE 1
 
-#include "Nucleus.hpp"
+#include "Platform.hpp"
 #include "restinio/all.hpp"
 
-using namespace nucleus;
 using namespace restinio;
 
     class RestServerRouter {

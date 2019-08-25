@@ -33,8 +33,8 @@ MyApp::MyApp()
 MyApp::~MyApp()
 {
     Logging::log()->debug("MyApp Persistent Destructor called");
-    pmem::obj::transaction::run(
-            PoolManager::getPoolManager().getPoolForTransaction(), [&] {
+    auto pop = pmem::obj::pool_by_pptr(p_message);
+    pmem::obj::transaction::run(pop, [&] {
                 delete_persistent<experimental::string>(p_message);
             });
 }
@@ -75,7 +75,8 @@ MyApp::Start(){
                 auto j_req = json::parse(req->body());
                 std::string message_value = j_req["value"];
                 Logging::log()->trace("MyApp Message is being set to {}.", message_value);
-                pmem::obj::transaction::run(PoolManager::getPoolManager().getPoolForTransaction(), [&] {
+                auto pop = pmem::obj::pool_by_pptr(p_message);
+                pmem::obj::transaction::run(pop, [&] {
                     p_message->assign(message_value);
                     p_update_count++;
                 });

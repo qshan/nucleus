@@ -16,35 +16,46 @@
 #ifndef NUCLEUS_POOL_H
 #define NUCLEUS_POOL_H
 
-#include "Nucleus.hpp"
+#include "Platform.hpp"
 #define LAYOUT_NAME "myapp_v0.0.1"
 
-class MyApp;
 
 namespace nucleus {
 
-    class AppManager;
-
-struct NucleusPool {
-    // This is the root structure of the pool file
-    pmem::obj::persistent_ptr<MyApp> app;
-    pmem::obj::p<AppState > app_state;
-};
-
+template <class N>
 class PoolManager {
 
-    friend AppManager;
-
 public:
-    ~PoolManager();
-    static PoolManager &getPoolManager();
-    pmem::obj::pool<NucleusPool> &getPoolForTransaction();
+    explicit PoolManager(const std::string &fileName_arg) : file_name(fileName_arg) {
+        Logging::log()->debug("Creating PoolManager with pool file {}", file_name);
+
+        if (pmem::obj::pool<N>::check(file_name, LAYOUT_NAME) == 1) {
+
+            Logging::log()->info("Opening existing pool {}", file_name);
+            my_pool = pmem::obj::pool<N>::open(file_name, LAYOUT_NAME);
+
+        } else {
+
+            Logging::log()->info("Creating new pool {} with layout '{}' and size {}", file_name, LAYOUT_NAME, config::pool_main_size);
+            my_pool = pmem::obj::pool<N>::create(
+                    file_name, LAYOUT_NAME, config::pool_main_size);
+            Logging::log()->info("Pool successfully created.");
+            Logging::log()->warn("Please remember Nucleus is alpha. Things *will* change and there *will* be bugs!");
+
+        }
+
+    };
+    ~PoolManager() {
+        Logging::log()->info("Closing persistent memory pool for file {}", file_name);
+        my_pool.close();
+    };
+    pmem::obj::pool<N> &pool() {
+        return my_pool;
+    };
 
 private:
-    pmem::obj::pool<NucleusPool> nucleus_pool;
-    explicit PoolManager(const std::string &name);
-    PoolManager(const PoolManager &);
-    PoolManager &operator=(const PoolManager &);
+    pmem::obj::pool<N> my_pool;
+    const std::string &file_name;
 
 };
 }

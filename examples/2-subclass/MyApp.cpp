@@ -32,8 +32,8 @@ MyApp::MyApp()
 MyApp::~MyApp()
 {
     Logging::log()->debug("MyApp Persistent Destructor called");
-    pmem::obj::transaction::run(
-            PoolManager::getPoolManager().getPoolForTransaction(), [&] {
+    auto pop = pmem::obj::pool_by_pptr(p_customers);
+    pmem::obj::transaction::run(pop, [&] {
                 delete_persistent<Customers>(p_customers);
             });
 }
