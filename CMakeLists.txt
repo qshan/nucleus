@@ -19,9 +19,12 @@ project(nucleus)
 # ------------------------------------------------------------------------------------
 # These set the App directories to compile with Nucleus
 set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/1-hello_world")
+# set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/2-subclass")
 
-# Comment out the above and use this for your own app
+# Comment out the above and use this line for your own test app.
 # set (APP_DIR "${CMAKE_SOURCE_DIR}/myapp")
+
+# Another option is to include Nucleus as a submodule in your own project.
 # ------------------------------------------------------------------------------------
 if (EXISTS "${APP_DIR}/main.cpp")
     message(STATUS "Using ${APP_DIR}/main.cpp for compilation. Be sure to delete your pmem file too.")

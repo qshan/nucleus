@@ -24,6 +24,7 @@
 
 using nlohmann::json;
 using namespace restinio;
+using namespace nucleus;
 
 template<typename T>
 std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
