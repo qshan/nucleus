@@ -47,7 +47,7 @@ On Linux, you may need to build PMDK from sources depending on your distribution
 There are utility scripts ```setup-pmdk.sh``` and ```build-pmdk.sh```  in ```utils/``` that can help set up or build these pre-requisites for Fedora.
 
 For Windows, you can install PMDK via vcpkg. See the instructions at the bottom
-of [this page](https://github.com/pmem/libpmemobj-cpp).  
+of [this page](https://github.com/pmem/libpmemobj-cpp). Make sure to set your compile options to 64 bit too. 
 
 ### Building the Nucleus "Hello World" app
 

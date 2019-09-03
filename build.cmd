@@ -45,7 +45,7 @@ IF EXIST build (
     TIMEOUT 10
 )
 ECHO.
-cmake . -Bbuild -G "Visual Studio 15 2017 Win64" -DCMAKE_TOOLCHAIN_FILE=%VCPKG_CMAKE%
+cmake . -Bbuild -G "Visual Studio 15 2017 Win64" -DCMAKE_TOOLCHAIN_FILE=%VCPKG_CMAKE% -DVCPKG_TARGET_TRIPLET=x64-windows
 ECHO.
 ECHO CMAKE Configuration complete. To build, run BUILD with no parameters
 ECHO.
