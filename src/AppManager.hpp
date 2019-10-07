@@ -101,7 +101,7 @@ namespace nucleus {
                 std::this_thread::sleep_for(std::chrono::milliseconds{1000});
             }
             Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
-
+            app->Stop();
             SetAppState(nucleus::STOPPED);
             Logging::log()->info("AppManager Run now exiting with AppState {}", GetAppStateName());
 
