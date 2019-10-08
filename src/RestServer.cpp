@@ -96,8 +96,8 @@ RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router)
             }
 
 {
-    Logging::log()->info("ReST Server configured on port {} with {} threads across {} CPUs",
-                         config::rest_port, config::rest_threads, std::thread::hardware_concurrency());
+    Logging::log()->info("ReST Server configured at http://{}:{} with {} threads across {} CPUs",
+                         config::rest_address, config::rest_port, config::rest_threads, std::thread::hardware_concurrency());
 
     restinio_control_thread = std::thread { [&] {
         restinio::run( restinio::on_thread_pool( config::rest_threads, restinio::skip_break_signal_handling(), my_server));
