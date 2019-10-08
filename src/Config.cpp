@@ -33,6 +33,7 @@ namespace config
     std::string pool_main_file = "./nucleus.pmem"; // note - replaced below if argv
 
     int rest_port = 8080;
+    std::string rest_address = "localhost";
     int rest_threads = 4;
 }
 
@@ -81,6 +82,7 @@ int config::handler(void* user, const char* section, const char* name, const cha
     if (check_match("","pool_main_size")) { config::pool_main_size = (size_t) std::stol(value) * 1024 * 1024; }
 
     if (check_match("","rest_port")) { config::rest_port = std::stoi(value);}
+    if (check_match("","rest_address")) { config::rest_address = value;}
     if (check_match("","rest_threads")) { config::rest_threads = std::stoi(value);}
 
     if (!matched){

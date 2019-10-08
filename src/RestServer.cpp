@@ -89,7 +89,8 @@ RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router)
             restinio::own_io_context(),
             restinio::server_settings_t< my_traits_t >{}
                 .port( config::rest_port )
-                .address( "localhost" )
+                .address( config::rest_address )
+                .separate_accept_and_create_connect(true)
                 .request_handler( std::move(router) )
 
             }
