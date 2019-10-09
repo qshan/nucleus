@@ -96,3 +96,11 @@ MyApp::Start(){
     // App::init(this); RUNTIME App instance should be called here, if needed
 
 }
+
+void
+MyApp::Stop()
+{
+    // if you create any volatile objects, delete them here;
+    Logging::log()->trace("MyApp is stopping");
+
+}

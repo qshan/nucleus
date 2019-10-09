@@ -38,6 +38,7 @@ namespace config
 
     // For ReSTServer
     extern int rest_port;
+    extern std::string rest_address;
     extern int rest_threads;
 
 }

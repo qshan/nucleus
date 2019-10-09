@@ -26,12 +26,12 @@ using nlohmann::json;
 Customers::Customers()
     : p_customers{make_persistent<pmem::obj::experimental::vector<Customer>>()}
 {
-    Logging::log()->debug("Customer Persistent Constructor called ");
+    Logging::log()->debug("Customers Persistent Constructor called ");
 }
 
 Customers::~Customers()
 {
-    Logging::log()->debug("CustomerPersistent Destructor called");
+    Logging::log()->debug("Customers Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_customers);
     pmem::obj::transaction::run(pop, [&] {
                 delete_persistent<pmem::obj::experimental::vector<Customer>>(p_customers);
@@ -42,13 +42,13 @@ void
 Customers::Initialize()
 {
     // child objects->Initialize any child objects here;
-    Logging::log()->trace("New Customer is initializing");
+    Logging::log()->trace("Customers is initializing");
 
 }
 
 void
 Customers::Start(){
-    Logging::log()->debug("Customer is starting");
+    Logging::log()->debug("Customers is starting");
 
     // App::init(this); RUNTIME App instance should be called here, if needed
 
@@ -76,5 +76,13 @@ Customers::Start(){
     RestServerRouter::getRestServerRouter().setRouter(std::move(router));
 
     // App::init(this); RUNTIME App instance should be called here, if needed
+
+}
+
+void
+Customers::Stop()
+{
+    // if you create any volatile objects, delete them here;
+    Logging::log()->trace("Customers is stopping");
 
 }

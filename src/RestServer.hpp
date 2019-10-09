@@ -13,6 +13,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
+// *****************************************************************
+// For help with Restinio, see https://stiffstream.com/en/docs.html
+// *****************************************************************
+
 #ifndef NUCLEUS_REST_HPP
 #define NUCLEUS_REST_HPP
 

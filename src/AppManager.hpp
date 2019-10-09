@@ -91,7 +91,7 @@ namespace nucleus {
 
             std::cout << std::endl;
             std::cout << "***" << std::endl;
-            std::cout << "Nucleus is running. Default site is http://localhost:" << config::rest_port << "/api/v1/ready" <<std::endl;
+            std::cout << "Nucleus is running. Default site is http://" <<config::rest_address << ":" << config::rest_port << "/api/v1/ready" <<std::endl;
             std::cout << "Press CTRL-C once to shutdown normally. May require up to 3 presses in abnormal termination" << std::endl;
             std::cout << "***" << std::endl;
             std::cout << std::endl;
@@ -101,7 +101,7 @@ namespace nucleus {
                 std::this_thread::sleep_for(std::chrono::milliseconds{1000});
             }
             Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
-
+            app->Stop();
             SetAppState(nucleus::STOPPED);
             Logging::log()->info("AppManager Run now exiting with AppState {}", GetAppStateName());
 
