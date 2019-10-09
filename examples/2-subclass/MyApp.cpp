@@ -55,3 +55,11 @@ MyApp::Start(){
 
 }
 
+void
+MyApp::Stop()
+{
+    // if you create any volatile objects, delete them here;
+    p_customers->Stop();
+    Logging::log()->trace("MyApp is stopping");
+
+}
