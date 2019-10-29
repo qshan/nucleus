@@ -36,9 +36,9 @@
 #include <libpmemobj++/p.hpp>
 #include <libpmemobj++/make_persistent.hpp>
 #include <libpmemobj++/make_persistent_array.hpp>
-#include <libpmemobj++/experimental/vector.hpp>
-#include <libpmemobj++/experimental/concurrent_hash_map.hpp>
-#include <libpmemobj++/experimental/string.hpp>
+#include <libpmemobj++/container/vector.hpp>
+#include <libpmemobj++/container/concurrent_hash_map.hpp>
+#include <libpmemobj++/container/string.hpp>
 #include <libpmemobj++/utils.hpp>
 
 // Nucleus common includes

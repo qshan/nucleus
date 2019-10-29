@@ -24,7 +24,7 @@ using nlohmann::json;
 
 
 MyApp::MyApp()
-    : p_message{make_persistent<experimental::string>("Hello World")}
+    : p_message{make_persistent<pmem::obj::string>("Hello World")}
     , p_update_count{0}
 {
     Logging::log()->debug("MyApp Persistent Constructor called");
@@ -35,7 +35,7 @@ MyApp::~MyApp()
     Logging::log()->debug("MyApp Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_message);
     pmem::obj::transaction::run(pop, [&] {
-                delete_persistent<experimental::string>(p_message);
+                delete_persistent<pmem::obj::string>(p_message);
             });
 }
 

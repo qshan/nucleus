@@ -18,14 +18,13 @@
 #include "Nucleus.hpp"
 
 using namespace pmem::obj;
-using namespace pmem::obj::experimental;
 
 // This is the vector element - ie a single customer.
 class Customer {
     // TODO - add functions here for creation of individual customer vars and managing individual customer objects
 private:
-    persistent_ptr<string> p_name;
-    persistent_ptr<string> p_city;
+    persistent_ptr<pmem::obj::string> p_name;
+    persistent_ptr<pmem::obj::string> p_city;
     p<int> order_count;
 };
 
@@ -45,7 +44,7 @@ public:
 
 private:
     // These are the persistent memory objects for this class
-    persistent_ptr<pmem::obj::experimental::vector<Customer>> p_customers;
+    persistent_ptr<pmem::obj::vector<Customer>> p_customers;
 };
 
 #endif //CUSTOMER_H

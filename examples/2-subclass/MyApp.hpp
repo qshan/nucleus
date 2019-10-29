@@ -19,7 +19,6 @@
 #include "Customers.hpp"
 
 using namespace pmem::obj;
-using namespace pmem::obj::experimental;
 
 class MyApp {
 

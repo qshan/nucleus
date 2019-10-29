@@ -64,7 +64,7 @@ if [ ! -d ./ndctl ]; then
 fi
 
 cd ndctl
-git checkout tags/v65
+git checkout tags/v67
 ./autogen.sh
 ./configure CFLAGS='-g -O2' --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib64
 make
@@ -78,7 +78,7 @@ if [ ! -d ./pmdk ]; then
 fi
 
 cd pmdk
-git checkout tags/1.6
+git checkout tags/1.7
 make
 make install
 cd ..
@@ -90,7 +90,7 @@ if false; then
     fi
 
     cd libpmemobj-cpp
-    git checkout tags/1.7
+    git checkout tags/1.8
     mkdir build
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release ..

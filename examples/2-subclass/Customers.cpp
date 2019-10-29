@@ -24,7 +24,7 @@ using nlohmann::json;
 
 
 Customers::Customers()
-    : p_customers{make_persistent<pmem::obj::experimental::vector<Customer>>()}
+    : p_customers{make_persistent<pmem::obj::vector<Customer>>()}
 {
     Logging::log()->debug("Customers Persistent Constructor called ");
 }
@@ -34,7 +34,7 @@ Customers::~Customers()
     Logging::log()->debug("Customers Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_customers);
     pmem::obj::transaction::run(pop, [&] {
-                delete_persistent<pmem::obj::experimental::vector<Customer>>(p_customers);
+                delete_persistent<pmem::obj::vector<Customer>>(p_customers);
             });
 }
 
