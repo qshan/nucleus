@@ -24,7 +24,7 @@ using nlohmann::json;
 
 
 Customers::Customers()
-    : p_customers{make_persistent<pmem::obj::vector<Customer>>()}
+    : p_customer_list{make_persistent<pmem::obj::vector<Customer>>()}
 {
     Logging::log()->debug("Customers Persistent Constructor called ");
 }
@@ -32,9 +32,9 @@ Customers::Customers()
 Customers::~Customers()
 {
     Logging::log()->debug("Customers Persistent Destructor called");
-    auto pop = pmem::obj::pool_by_pptr(p_customers);
+    auto pop = pmem::obj::pool_by_pptr(p_customer_list);
     pmem::obj::transaction::run(pop, [&] {
-                delete_persistent<pmem::obj::vector<Customer>>(p_customers);
+                delete_persistent<pmem::obj::vector<Customer>>(p_customer_list);
             });
 }
 
@@ -43,6 +43,16 @@ Customers::Initialize()
 {
     // child objects->Initialize any child objects here;
     Logging::log()->trace("Customers is initializing");
+
+    // Add a sample customer
+    auto pop = pmem::obj::pool_by_pptr(p_customer_list);
+    pmem::obj::transaction::run(pop, [&] {
+        auto customer = Customer();
+        customer.p_name = make_persistent<string>("Peter");
+        customer.p_city = make_persistent<string>("Singapore");
+        customer.order_count = 26;
+        p_customer_list->push_back(std::move(customer));
+    });
 
 }
 
@@ -58,11 +68,15 @@ Customers::Start(){
             R"(/api/v1/app/customers)",
             [&](auto req, auto params) {
 
-                json j = "{}"_json;
+                json j = "[]"_json;
 
-                // TODO - iterate the customer vector, listing customers
-
-                //j["data"]["value"] = p_message->c_str();
+                for (auto &it : *p_customer_list) {
+                    json c = "{}"_json;
+                    c["name"] = it.p_name->c_str();
+                    c["city"] = it.p_city->c_str();
+                    c["order_count"] = (int) it.order_count;
+                    j.push_back(c);
+                }
 
                 return req->create_response()
                         .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
