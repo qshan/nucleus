@@ -32,7 +32,6 @@ namespace details {
 
 SPDLOG_INLINE registry::registry()
     : formatter_(new pattern_formatter())
-    , level_(spdlog::logger::default_level())
 {
 
 #ifndef SPDLOG_DISABLE_DEFAULT_LOGGER
@@ -67,6 +66,11 @@ SPDLOG_INLINE void registry::initialize_logger(std::shared_ptr<logger> new_logge
 
     new_logger->set_level(level_);
     new_logger->flush_on(flush_level_);
+
+    if (backtrace_n_messages_ > 0)
+    {
+        new_logger->enable_backtrace(backtrace_n_messages_);
+    }
 
     if (automatic_registration_)
     {
@@ -133,6 +137,27 @@ SPDLOG_INLINE void registry::set_formatter(std::unique_ptr<formatter> formatter)
     for (auto &l : loggers_)
     {
         l.second->set_formatter(formatter_->clone());
+    }
+}
+
+SPDLOG_INLINE void registry::enable_backtrace(size_t n_messages)
+{
+    std::lock_guard<std::mutex> lock(logger_map_mutex_);
+    backtrace_n_messages_ = n_messages;
+
+    for (auto &l : loggers_)
+    {
+        l.second->enable_backtrace(n_messages);
+    }
+}
+
+SPDLOG_INLINE void registry::disable_backtrace()
+{
+    std::lock_guard<std::mutex> lock(logger_map_mutex_);
+    backtrace_n_messages_ = 0;
+    for (auto &l : loggers_)
+    {
+        l.second->disable_backtrace();
     }
 }
 
@@ -245,7 +270,7 @@ SPDLOG_INLINE void registry::throw_if_exists_(const std::string &logger_name)
 {
     if (loggers_.find(logger_name) != loggers_.end())
     {
-        throw spdlog_ex("logger with name '" + logger_name + "' already exists");
+        SPDLOG_THROW(spdlog_ex("logger with name '" + logger_name + "' already exists"));
     }
 }
 

@@ -7,6 +7,8 @@
 #include "spdlog/details/os.h"
 #endif
 
+#include "spdlog/common.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -48,8 +50,17 @@
 #ifdef __linux__
 #include <sys/syscall.h> //Use gettid() syscall under linux to get thread id
 
-#elif __FreeBSD__
-#include <sys/thr.h> //Use thr_self() syscall under FreeBSD to get thread id
+#elif defined(_AIX)
+#include <pthread.h> // for pthread_getthreadid_np
+
+#elif defined(__DragonFly__) || defined(__FreeBSD__)
+#include <pthread_np.h> // for pthread_getthreadid_np
+
+#elif defined(__NetBSD__)
+#include <lwp.h> // for _lwp_self
+
+#elif defined(__sun)
+#include <thread.h> // for thr_self
 #endif
 
 #endif // unix
@@ -120,13 +131,13 @@ SPDLOG_INLINE void prevent_child_fd(FILE *f)
 #if !defined(__cplusplus_winrt)
     auto file_handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(f)));
     if (!::SetHandleInformation(file_handle, HANDLE_FLAG_INHERIT, 0))
-        throw spdlog_ex("SetHandleInformation failed", errno);
+        SPDLOG_THROW(spdlog_ex("SetHandleInformation failed", errno));
 #endif
 #else
     auto fd = fileno(f);
     if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
     {
-        throw spdlog_ex("fcntl with FD_CLOEXEC failed", errno);
+        SPDLOG_THROW(spdlog_ex("fcntl with FD_CLOEXEC failed", errno));
     }
 #endif
 }
@@ -162,6 +173,11 @@ SPDLOG_INLINE int remove(const filename_t &filename) SPDLOG_NOEXCEPT
 #endif
 }
 
+SPDLOG_INLINE int remove_if_exists(const filename_t &filename) SPDLOG_NOEXCEPT
+{
+    return file_exists(filename) ? remove(filename) : 0;
+}
+
 SPDLOG_INLINE int rename(const filename_t &filename1, const filename_t &filename2) SPDLOG_NOEXCEPT
 {
 #if defined(_WIN32) && defined(SPDLOG_WCHAR_FILENAMES)
@@ -171,7 +187,7 @@ SPDLOG_INLINE int rename(const filename_t &filename1, const filename_t &filename
 #endif
 }
 
-// Return if file exists
+// Return true if file exists
 SPDLOG_INLINE bool file_exists(const filename_t &filename) SPDLOG_NOEXCEPT
 {
 #ifdef _WIN32
@@ -192,7 +208,7 @@ SPDLOG_INLINE size_t filesize(FILE *f)
 {
     if (f == nullptr)
     {
-        throw spdlog_ex("Failed getting file size. fd is null");
+        SPDLOG_THROW(spdlog_ex("Failed getting file size. fd is null"));
     }
 #if defined(_WIN32) && !defined(__CYGWIN__)
     int fd = _fileno(f);
@@ -214,9 +230,9 @@ SPDLOG_INLINE size_t filesize(FILE *f)
 #else // unix
     int fd = fileno(f);
 // 64 bits(but not in osx or cygwin, where fstat64 is deprecated)
-#if !defined(__FreeBSD__) && !defined(__APPLE__) && (defined(__x86_64__) || defined(__ppc64__)) && !defined(__CYGWIN__)
+#if (defined(__linux__) || defined(__sun) || defined(_AIX)) && (defined(__LP64__) || defined(_LP64))
     struct stat64 st;
-    if (fstat64(fd, &st) == 0)
+    if (::fstat64(fd, &st) == 0)
     {
         return static_cast<size_t>(st.st_size);
     }
@@ -229,7 +245,7 @@ SPDLOG_INLINE size_t filesize(FILE *f)
     }
 #endif
 #endif
-    throw spdlog_ex("Failed getting file size from fd", errno);
+    SPDLOG_THROW(spdlog_ex("Failed getting file size from fd", errno));
 }
 
 // Return utc offset in minutes or throw spdlog_ex on failure
@@ -245,7 +261,7 @@ SPDLOG_INLINE int utc_minutes_offset(const std::tm &tm)
     auto rv = GetDynamicTimeZoneInformation(&tzinfo);
 #endif
     if (rv == TIME_ZONE_ID_INVALID)
-        throw spdlog::spdlog_ex("Failed getting timezone info. ", errno);
+        SPDLOG_THROW(spdlog::spdlog_ex("Failed getting timezone info. ", errno));
 
     int offset = -tzinfo.Bias;
     if (tm.tm_isdst)
@@ -304,15 +320,19 @@ SPDLOG_INLINE size_t _thread_id() SPDLOG_NOEXCEPT
 {
 #ifdef _WIN32
     return static_cast<size_t>(::GetCurrentThreadId());
-#elif __linux__
+#elif defined(__linux__)
 #if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 21)
 #define SYS_gettid __NR_gettid
 #endif
     return static_cast<size_t>(syscall(SYS_gettid));
-#elif __FreeBSD__
-    long tid;
-    thr_self(&tid);
-    return static_cast<size_t>(tid);
+#elif defined(_AIX) || defined(__DragonFly__) || defined(__FreeBSD__)
+    return static_cast<size_t>(pthread_getthreadid_np());
+#elif defined(__NetBSD__)
+    return static_cast<size_t>(_lwp_self());
+#elif defined(__OpenBSD__)
+    return static_cast<size_t>(getthrid());
+#elif defined(__sun)
+    return static_cast<size_t>(thr_self());
 #elif __APPLE__
     uint64_t tid;
     pthread_threadid_np(nullptr, &tid);
@@ -348,7 +368,7 @@ SPDLOG_INLINE void sleep_for_millis(int milliseconds) SPDLOG_NOEXCEPT
 #if defined(_WIN32) && defined(SPDLOG_WCHAR_FILENAMES)
 SPDLOG_INLINE std::string filename_to_str(const filename_t &filename)
 {
-    fmt::memory_buffer buf;
+    memory_buf_t buf;
     wstr_to_utf8buf(filename, buf);
     return fmt::to_string(buf);
 }
@@ -377,7 +397,7 @@ SPDLOG_INLINE bool is_color_terminal() SPDLOG_NOEXCEPT
     return true;
 #else
     static constexpr std::array<const char *, 14> Terms = {
-        "ansi", "color", "console", "cygwin", "gnome", "konsole", "kterm", "linux", "msys", "putty", "rxvt", "screen", "vt100", "xterm"};
+        {"ansi", "color", "console", "cygwin", "gnome", "konsole", "kterm", "linux", "msys", "putty", "rxvt", "screen", "vt100", "xterm"}};
 
     const char *env_p = std::getenv("TERM");
     if (env_p == nullptr)
@@ -404,11 +424,11 @@ SPDLOG_INLINE bool in_terminal(FILE *file) SPDLOG_NOEXCEPT
 }
 
 #if (defined(SPDLOG_WCHAR_TO_UTF8_SUPPORT) || defined(SPDLOG_WCHAR_FILENAMES)) && defined(_WIN32)
-SPDLOG_INLINE void wstr_to_utf8buf(basic_string_view_t<wchar_t> wstr, fmt::memory_buffer &target)
+SPDLOG_INLINE void wstr_to_utf8buf(wstring_view_t wstr, memory_buf_t &target)
 {
     if (wstr.size() > static_cast<size_t>(std::numeric_limits<int>::max()))
     {
-        throw spdlog::spdlog_ex("UTF-16 string is too big to be converted to UTF-8");
+        SPDLOG_THROW(spdlog::spdlog_ex("UTF-16 string is too big to be converted to UTF-8"));
     }
 
     int wstr_size = static_cast<int>(wstr.size());
@@ -436,7 +456,7 @@ SPDLOG_INLINE void wstr_to_utf8buf(basic_string_view_t<wchar_t> wstr, fmt::memor
         }
     }
 
-    throw spdlog::spdlog_ex(fmt::format("WideCharToMultiByte failed. Last error: {}", ::GetLastError()));
+    SPDLOG_THROW(spdlog::spdlog_ex(fmt::format("WideCharToMultiByte failed. Last error: {}", ::GetLastError())));
 }
 #endif // (defined(SPDLOG_WCHAR_TO_UTF8_SUPPORT) || defined(SPDLOG_WCHAR_FILENAMES)) && defined(_WIN32)
 

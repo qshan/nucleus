@@ -20,7 +20,7 @@
 #include <regex>
 #include "ini.hpp"
 #include "Config.hpp"
-#include "spdlog/spdlog.h"
+#include "Logging.hpp"
 
 namespace nucleus {
 namespace config

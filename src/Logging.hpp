@@ -16,6 +16,7 @@
 #ifndef NUCLEUS_LOGGING_H
 #define NUCLEUS_LOGGING_H
 
+// #define SPDLOG_FMT_EXTERNAL
 #include "spdlog/spdlog.h"
 
 class Logging {

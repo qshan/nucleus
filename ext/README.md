@@ -9,8 +9,8 @@ HTTP_PARSER | https://github.com/nodejs/http-parser | 2.9.2 | 5c17dad400e45c5a44
 ASIO | https://think-async.com/Asio/ | 1.12.2 | N/A ||
 INIH | https://github.com/benhoyt/inih | r46>> | 0a87bf16693e35ed172ce8738404d9acd9545a5a |*| 
 JSON.HPP | https://github.com/nlohmann/json | v3.7.0>> | f272ad533d32a40a3b2154a76f1ae9a45eacd6d3 |*|
-SPDLOG | https://github.com/gabime/spdlog |  v1.3.1>> | 88b4adebdc0dcb2be9ead196c99db60115e4d307 |*| 
-FMT | https://github.com/fmtlib/fmt | 5.3.0 | 9e554999ce02cf86fcdfe74fe740c4fe3f5a56d5 |*| 
+SPDLOG | https://github.com/gabime/spdlog |  v1.4.2 | 1549ff12f1aa61ffc4d9a8727c519034724392a0 |*| 
+FMT | https://github.com/fmtlib/fmt | 6.0.0 | Uses spdlog bundled version - see notes |*| 
 LIBPMEMOBJ++ | https://github.com/pmem/libpmemobj-cpp | v1.8 | 26c86b46997d25c818b246f2a143d2248503cc67 |*|  
 
 \* In Release, \>\> indicates a later commit was taken than the release to resolve issues or use latest at sync
@@ -28,16 +28,24 @@ ensuring ongoing compliance with the terms of these copyright owners.
 1. Delete old ext/restinio directory
 2. Copy the /dev/restinio directory into /ext
 ### HTTP_Parser
+
 ### ASIO
 ### INIH
 1. Copy the contents of .c and .h into .cpp and .hpp files
 2. Update #include in .cpp to reference inih.hpp
+
 ### JSON.HPP
+1. Copy the `single_include/nlohhman/json/json.hpp` file to `ext/json.hpp`
 
 ### SPDLOG
+1. Delete old ext/spdlog directory
+2. Copy the include/spdlog directory into ext
+3. Copy the bundled fmt directory to /ext/fmt
+
 ### FMT
 1. Delete old ext/fmt directory
-2. Copy the include/fmt directory into ext
+2. Copy the spdlog/fmt/bundled directory into ext
+
 ### LIBPMEMOBJ+++
 1. Delete the old ext/libpmemobj++ directory
 2. Copy the /include/libpmemobj++ directory into /ext

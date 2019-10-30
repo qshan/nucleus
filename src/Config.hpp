@@ -17,7 +17,7 @@
 #define NUCLEUS_CONFIG_HPP
 
 #include <string>
-#include "spdlog/spdlog.h"
+#include "Logging.hpp"
 
 namespace nucleus {
 namespace config

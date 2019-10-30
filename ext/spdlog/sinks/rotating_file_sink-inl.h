@@ -43,18 +43,14 @@ SPDLOG_INLINE rotating_file_sink<Mutex>::rotating_file_sink(
 template<typename Mutex>
 SPDLOG_INLINE filename_t rotating_file_sink<Mutex>::calc_filename(const filename_t &filename, std::size_t index)
 {
-    typename std::conditional<std::is_same<filename_t::value_type, char>::value, fmt::memory_buffer, fmt::wmemory_buffer>::type w;
-    if (index != 0u)
+    if (index == 0u)
     {
-        filename_t basename, ext;
-        std::tie(basename, ext) = details::file_helper::split_by_extension(filename);
-        fmt::format_to(w, SPDLOG_FILENAME_T("{}.{}{}"), basename, index, ext);
+        return filename;
     }
-    else
-    {
-        fmt::format_to(w, SPDLOG_FILENAME_T("{}"), filename);
-    }
-    return fmt::to_string(w);
+
+    filename_t basename, ext;
+    std::tie(basename, ext) = details::file_helper::split_by_extension(filename);
+    return fmt::format(SPDLOG_FILENAME_T("{}.{}{}"), basename, index, ext);
 }
 
 template<typename Mutex>
@@ -66,7 +62,7 @@ SPDLOG_INLINE const filename_t &rotating_file_sink<Mutex>::filename() const
 template<typename Mutex>
 SPDLOG_INLINE void rotating_file_sink<Mutex>::sink_it_(const details::log_msg &msg)
 {
-    fmt::memory_buffer formatted;
+    memory_buf_t formatted;
     base_sink<Mutex>::formatter_->format(msg, formatted);
     current_size_ += formatted.size();
     if (current_size_ > max_size_)
@@ -112,7 +108,8 @@ SPDLOG_INLINE void rotating_file_sink<Mutex>::rotate_()
             {
                 file_helper_.reopen(true); // truncate the log file anyway to prevent it to grow beyond its limit!
                 current_size_ = 0;
-                throw spdlog_ex("rotating_file_sink: failed renaming " + filename_to_str(src) + " to " + filename_to_str(target), errno);
+                SPDLOG_THROW(
+                    spdlog_ex("rotating_file_sink: failed renaming " + filename_to_str(src) + " to " + filename_to_str(target), errno));
             }
         }
     }

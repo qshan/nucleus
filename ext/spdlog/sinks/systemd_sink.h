@@ -23,13 +23,13 @@ class systemd_sink : public base_sink<Mutex>
 public:
     //
     systemd_sink()
-        : syslog_levels_{/* spdlog::level::trace      */ LOG_DEBUG,
+        : syslog_levels_{{/* spdlog::level::trace      */ LOG_DEBUG,
               /* spdlog::level::debug      */ LOG_DEBUG,
               /* spdlog::level::info       */ LOG_INFO,
               /* spdlog::level::warn       */ LOG_WARNING,
               /* spdlog::level::err        */ LOG_ERR,
               /* spdlog::level::critical   */ LOG_CRIT,
-              /* spdlog::level::off        */ LOG_INFO}
+              /* spdlog::level::off        */ LOG_INFO}}
     {}
 
     ~systemd_sink() override {}
@@ -38,7 +38,8 @@ public:
     systemd_sink &operator=(const systemd_sink &) = delete;
 
 protected:
-    std::array<int, 7> syslog_levels_;
+    using levels_array = std::array<int, 7>;
+    levels_array syslog_levels_;
 
     void sink_it_(const details::log_msg &msg) override
     {
@@ -66,13 +67,13 @@ protected:
 
         if (err)
         {
-            throw spdlog_ex("Failed writing to systemd", errno);
+            SPDLOG_THROW(spdlog_ex("Failed writing to systemd", errno));
         }
     }
 
     int syslog_level(level::level_enum l)
     {
-        return syslog_levels_.at(static_cast<int>(l));
+        return syslog_levels_.at(static_cast<levels_array::size_type>(l));
     }
 
     void flush_() override {}
