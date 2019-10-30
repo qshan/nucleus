@@ -6,6 +6,8 @@
 	Socket adapter for asio::ssl::stream< asio::ip::tcp::socket >.
 */
 
+#pragma once
+
 #include <restinio/asio_include.hpp>
 
 #if !defined(RESTINIO_USE_BOOST_ASIO)
@@ -68,6 +70,36 @@ class tls_socket_t
 			return m_socket->lowest_layer();
 		}
 
+		/*!
+		 * \brief Get an access to underlying Asio's socket.
+		 *
+		 * This feature can be useful if there is a need to call some
+		 * Asio's socket specific methods like `native_handle`.
+		 *
+		 * \since
+		 * v.0.5.2
+		 */
+		socket_t &
+		asio_ssl_stream()
+		{
+			return *m_socket;
+		}
+
+		/*!
+		 * \brief Get an access to underlying Asio's socket.
+		 *
+		 * This feature can be useful if there is a need to call some
+		 * Asio's socket specific methods like `native_handle`.
+		 *
+		 * \since
+		 * v.0.5.2
+		 */
+		const socket_t &
+		asio_ssl_stream() const
+		{
+			return *m_socket;
+		}
+
 		auto
 		get_executor()
 		{
@@ -126,12 +158,6 @@ class tls_socket_t
 		async_handshake( Args &&... args )
 		{
 			return m_socket->async_handshake( std::forward< Args >( args )... );
-		}
-
-		auto &
-		get_io_context()
-		{
-			return m_socket->get_io_context();
 		}
 
 	private:

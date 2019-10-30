@@ -13,7 +13,7 @@
 #include <string>
 #include <cstring>
 
-#include <fmt/format.h>
+#include <restinio/impl/include_fmtlib.hpp>
 
 #include <zlib.h>
 
@@ -985,7 +985,7 @@ class body_appender_base_t
 		body_appender_base_t & operator = ( const body_appender_base_t & ) = delete;
 		body_appender_base_t & operator = ( body_appender_base_t && ) = delete;
 
-		body_appender_base_t( body_appender_base_t && ba )
+		body_appender_base_t( body_appender_base_t && ba ) noexcept
 			:	m_ztransformator{ std::move( ba.m_ztransformator ) }
 			,	m_resp{ ba.m_resp }
 		{}
