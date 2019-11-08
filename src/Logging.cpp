@@ -20,6 +20,7 @@
 #include "Config.hpp"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/async.h"
 
 using namespace nucleus;
 
@@ -33,17 +34,29 @@ Logging::Logging(const std::string &name)
 
     auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(config::log_file, 1024*1024 * 20, 10);
     file_sink->set_level(spdlog::level::trace);
+
     std::array<spdlog::sink_ptr, 2> sinks {console_sink, file_sink};
 
-    mylog = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
+    // Note - if missing log entries, need to increase these numbers
+    spdlog::init_thread_pool(LOG_SLOTS_K * 1024, LOG_THREADS );
+    mylog = std::make_shared<spdlog::async_logger>(name, sinks.begin(), sinks.end(),
+            spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
+
+    spdlog::register_logger(mylog);
+
     mylog->set_level(config::log_level);
+
+    mylog->flush_on(spdlog::level::warn);
+    spdlog::flush_every(std::chrono::seconds(5));
 
     mylog->info("Logging has been initialised with name {} and loglevel {} and saved to {}",
                 name, spdlog::level::to_string_view(config::log_level), config::log_file);
+    mylog->debug("Logging is async using {} threads with {} slots and a DROP policy if out of slots. If missing log entries, adjust these settings",
+                 LOG_THREADS, LOG_SLOTS_K);
 
-    // This line must be retained if using the Nucleus MIT Open Source license.
+    // This line must be retained if using the Nucleus Open Source license.
     mylog->info("Built with Nucleus. See https://axomem.io for more info, and follow us on Twitter @axomemio for updates");
-    // The line above must be retained if using the Nucleus MIT Open Source license.
+    // The line above must be retained if using the Nucleus Open Source license.
 }
 
 Logging *

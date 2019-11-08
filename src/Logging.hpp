@@ -19,6 +19,9 @@
 // #define SPDLOG_FMT_EXTERNAL
 #include "spdlog/spdlog.h"
 
+#define LOG_SLOTS_K 16
+#define LOG_THREADS 2
+
 class Logging {
 
 public:
