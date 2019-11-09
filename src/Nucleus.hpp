@@ -60,6 +60,8 @@ public:
 
             app_manager.Run();
 
+            exitCode = EXIT_SUCCESS;
+
         } catch (const pmem::transaction_error &err) {
             log->critical("Exception: pmem Transaction Error: {}", err.what());
         } catch (const pmem::transaction_scope_error &tse) {
