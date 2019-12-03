@@ -84,7 +84,7 @@ namespace nucleus {
             app->Start();
 
             Logging::log()->debug("AppManager is creating ReST Server");
-            RestServer rest_server {RestServerRouter::getRestServerRouter().getRouter()};
+            std::unique_ptr<RestServer> rest_server(new RestServer(RestServerRouter::getRestServerRouter().getRouter()));
 
             SetAppState(nucleus::RUNNING);
             Logging::log()->debug("AppManager Entering Main thread run loop with App State {}", GetAppStateName());
@@ -101,6 +101,9 @@ namespace nucleus {
                 std::this_thread::sleep_for(std::chrono::milliseconds{1000});
             }
             Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
+
+            rest_server.reset(nullptr);
+
             app->Stop();
             SetAppState(nucleus::STOPPED);
             Logging::log()->info("AppManager Run now exiting with AppState {}", GetAppStateName());
