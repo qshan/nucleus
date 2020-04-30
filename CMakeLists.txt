@@ -64,6 +64,8 @@ find_package(PkgConfig QUIET)
 find_path(PMDK_INCLUDE_DIRS libpmemobj.h)
 find_library(PMDK_LIBPMEMOBJ_LIBRARY NAMES libpmemobj libpmemobj.so HINTS /usr/local/lib64/)
 
+set(LIBPMEMOBJ_CPP_REQUIRED_VERSION 1.9)
+
 message (STATUS "Found PMDK include headers in ${PMDK_INCLUDE_DIRS}" )
 message (STATUS "Found PMDK LIBPMEMOBJ library in ${PMDK_LIBPMEMOBJ_LIBRARY}" )
 
@@ -79,8 +81,8 @@ set (EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
 
 add_executable(nucleus ${SOURCES_APP} ${SOURCES_CORE} ${SOURCES_EXT} )
 
-target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${CORE_INCLUDE_DIRS} ${EXT_INCLUDE_DIRS} ${APP_INCLUDE_DIRS})
-target_link_libraries(nucleus ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${CORE_INCLUDE_DIRS} ${EXT_INCLUDE_DIRS} ${APP_INCLUDE_DIRS} libpmemobj++)
+target_link_libraries(nucleus ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${LIBPMEMOBJ++_LIBRARIES})
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)

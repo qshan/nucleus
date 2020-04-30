@@ -22,11 +22,11 @@ echo "For other distros, see https://docs.pmem.io/getting-started-guide/installi
 sleep 5
 
 echo "NDCTL for NVDIMM control:"
-dnf install ndctl
+dnf install -y ndctl
 
 echo "All PMDK Runtimes:"
-dnf install libpmem librpmem libpmemblk libpmemlog libpmemobj libpmempool pmempool
+dnf install -y libpmem librpmem libpmemblk libpmemlog libpmemobj libpmempool pmempool
 echo "All PMDK Development headers:"
-dnf install libpmem-devel librpmem-devel libpmemblk-devel libpmemlog-devel libpmemobj-devel libpmemobj++-devel libpmempool-devel
+dnf install -y libpmem-devel librpmem-devel libpmemblk-devel libpmemlog-devel libpmemobj-devel libpmemobj++-devel libpmempool-devel
 echo "All PMDK Debug versions:"
-dnf install libpmem-debug librpmem-debug libpmemblk-debug libpmemlog-debug libpmemobj-debug libpmempool-debug
+dnf install -y libpmem-debug librpmem-debug libpmemblk-debug libpmemlog-debug libpmemobj-debug libpmempool-debug
