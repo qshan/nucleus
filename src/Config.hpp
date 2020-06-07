@@ -41,6 +41,9 @@ namespace config
     extern std::string rest_address;
     extern int rest_threads;
 
+    // For Testing or without ReST Server
+    extern std::string condition_path_exists;
+
 }
 }
 

@@ -16,6 +16,7 @@
 #ifndef NUCLEUS_APPMANAGER_HPP
 #define NUCLEUS_APPMANAGER_HPP
 
+#include <filesystem>
 #include "PoolManager.hpp"
 #include "RestServer.hpp"
 
@@ -99,6 +100,7 @@ namespace nucleus {
             while (GetAppState() == nucleus::RUNNING){
                 // *** This holds overall run state **************************
                 std::this_thread::sleep_for(std::chrono::milliseconds{1000});
+                CheckConditionPathExists();
             }
             Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
             app->Stop();
@@ -142,6 +144,15 @@ namespace nucleus {
             Logging::log()->info("AppManager Exit requested. Current App State is {}. Reason {}", GetAppStateName(), reason);
             SetAppState(nucleus::EXITING);
         };
+
+        void CheckConditionPathExists() {
+            if (not config::condition_path_exists.empty()) {
+                if (not std::filesystem::exists(config::condition_path_exists)) {
+                    Exit(fmt::format("Condition path is specified but does not or no longer exists."
+                                     " Path is {}", config::condition_path_exists));
+                }
+            }
+        }
     };
 
 
