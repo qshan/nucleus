@@ -19,15 +19,23 @@
 
 using namespace pmem::obj;
 
-class MyApp {
+class AppBase {
+public:
+    virtual void Initialize();
+    virtual void Start() = 0;
+    virtual void Stop() = 0;
+};
+
+
+class MyApp : AppBase {
 
 public:
     MyApp();            // this at pool creation or app reset. It does not run on each application start
     ~MyApp();           // this happens when the class instance is being deleted from the pool. It is not called on app close.
 
-    void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
-    void Start();       // this happens each time the applications runs
-    void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
+    void Initialize() override;  // this happens at object creation, typically to init downstream objects that rely on this obj
+    void Start() override;       // this happens each time the applications runs
+    void Stop() override;        // this happens when the app is shutting down. Note there is no runtime destructor!
 
 private:
     // These are the persistent memory objects for this application.

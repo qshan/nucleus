@@ -22,6 +22,10 @@
 using namespace nucleus;
 using nlohmann::json;
 
+void
+AppBase::Initialize() {
+    Logging::log()->debug("AppBase::Initialize called");
+}
 
 MyApp::MyApp()
     : p_message{make_persistent<pmem::obj::string>("Hello World")}
@@ -44,7 +48,7 @@ MyApp::Initialize()
 {
     // child objects->Initialize any child objects here;
     Logging::log()->trace("MyApp is initializing");
-
+    AppBase::Initialize();
 }
 
 void

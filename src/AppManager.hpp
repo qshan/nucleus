@@ -19,6 +19,7 @@
 #include <filesystem>
 #include "PoolManager.hpp"
 #include "RestServer.hpp"
+#include <type_traits>
 
 
 namespace nucleus {
