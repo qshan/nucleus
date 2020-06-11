@@ -21,8 +21,8 @@ using namespace pmem::obj;
 
 class AppBase {
 public:
-    virtual void Initialize();
-    virtual void Start() = 0;
+    virtual void Initialize() = 0;
+    virtual void Start();
     virtual void Stop() = 0;
 };
 

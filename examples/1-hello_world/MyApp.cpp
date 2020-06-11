@@ -23,8 +23,8 @@ using namespace nucleus;
 using nlohmann::json;
 
 void
-AppBase::Initialize() {
-    Logging::log()->debug("AppBase::Initialize called");
+AppBase::Start() {
+    Logging::log()->debug("AppBase::Start called");
 }
 
 MyApp::MyApp()
@@ -48,13 +48,12 @@ MyApp::Initialize()
 {
     // child objects->Initialize any child objects here;
     Logging::log()->trace("MyApp is initializing");
-    AppBase::Initialize();
 }
 
 void
 MyApp::Start(){
     Logging::log()->debug("MyApp is starting");
-
+    AppBase::Start();
     // Map the APIS
 
     auto router = RestServerRouter::getRestServerRouter().getRouter();
