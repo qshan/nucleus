@@ -48,7 +48,7 @@ if(MSVC)
     add_definitions("/W3" "/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
     add_compile_options( "$<$<CONFIG:RELEASE>:/O2>")
 else()
-    # add_definitions("-Wall" ) # "-Wextra" "-Werror"
+    add_definitions("-Wall" ) # "-Wextra" "-Werror"
     add_compile_options("$<$<CONFIG:RELEASE>:-O3>")
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         add_compile_options("-stdlib=libc++")

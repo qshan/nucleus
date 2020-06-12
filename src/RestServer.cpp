@@ -13,9 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-// TODO - how to add .append_header( restinio::http_field_t::access_control_allow_origin, "*" ) across all
-// TODO - how to write custom logger that logs info/warning/errors to our logger.
-
 #include "RestServer.hpp"
 #include "restinio/all.hpp"
 #include "json.hpp"
@@ -24,16 +21,8 @@ using nlohmann::json;
 using namespace restinio;
 using namespace nucleus;
 
-template<typename T>
-std::ostream & operator<<(std::ostream & to, const optional_t<T> & v) {
-// TODO - check if this is needed from restinio after finishing routes
-    if(v) to << *v;
-    return to;
-}
 
-RestServerRouter::RestServerRouter()
-        : router{std::make_unique<router::express_router_t<>>()}
-{
+RestServerRouter::RestServerRouter() {
 
     Logging::log()->trace("ReST Server configuring default routes");
 
@@ -53,24 +42,22 @@ RestServerRouter::RestServerRouter()
             [](auto req){
                 return req->create_response(status_not_found()).connection_close().done();
             });
-
+    Logging::log()->trace("ReST Server default routes done");
 }
 
 std::unique_ptr<router::express_router_t<>>
 RestServerRouter::getRouter(){
     Logging::log()->trace("RestServer GetRouter being called");
-    if (router == nullptr) {
-        throw std::logic_error("Unable to get Router since its already out for route population or server has started");
-    }
+    assert(router != nullptr && "Unable to get Router since its already out for route population or server has started");
+
     return std::move(router);
 }
 
 void
 RestServerRouter::setRouter(std::unique_ptr<router::express_router_t<>> router_arg) {
     Logging::log()->trace("RestServer SetRouter being called");
-    if (router != nullptr) {
-        throw std::logic_error("Unable to set Router since its already active. Check logic.");
-    }
+    assert(router == nullptr && "Unable to set Router since its already active. Check logic.");
+
     router = std::move(router_arg);
 }
 
@@ -82,24 +69,28 @@ RestServerRouter::getRestServerRouter() {
 
 // --------------------
 
-RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router)
-    : my_server {
-            restinio::own_io_context(),
-            restinio::server_settings_t< my_traits_t >{}
-                .port( config::rest_port )
-                .address( config::rest_address )
+RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router,
+                       const std::string& address_arg, int port_arg,
+                       size_t threads_arg) :
+
+    // This creates the server object but does not start it
+    my_server { restinio::own_io_context(),
+                restinio::server_settings_t< my_traits_t >{}
+                .port( port_arg )
+                .address( address_arg )
                 .separate_accept_and_create_connect(true)
                 .request_handler( std::move(router) )
-
-            }
+    }
 
 {
-    Logging::log()->info("ReST Server configured at http://{}:{} with {} threads across {} CPUs",
-                         config::rest_address, config::rest_port, config::rest_threads, std::thread::hardware_concurrency());
+    Logging::log()->info("ReST Server starting at http://{}:{} with {} threads across {} CPUs",
+                         config::rest_address, config::rest_port, config::rest_threads,
+                         std::thread::hardware_concurrency());
 
-    restinio_control_thread = std::thread { [&] {
-        restinio::run( restinio::on_thread_pool( config::rest_threads, restinio::skip_break_signal_handling(), my_server));
-    }
+    restinio_control_thread = std::thread { [this, threads_arg] {
+            restinio::run( restinio::on_thread_pool(threads_arg, restinio::skip_break_signal_handling(),
+                                                           my_server));
+        }
     };
 
 }

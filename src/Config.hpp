@@ -19,8 +19,7 @@
 #include <string>
 #include "Logging.hpp"
 
-namespace nucleus {
-namespace config
+namespace nucleus::config
 {
     bool load_config(int argc, char *argv[]);
     int handler(void* user, const char* section, const char* name, const char* value);
@@ -39,12 +38,11 @@ namespace config
     // For ReSTServer
     extern int rest_port;
     extern std::string rest_address;
-    extern int rest_threads;
+    extern size_t rest_threads;
 
     // For Testing or without ReST Server
     extern std::string condition_path_exists;
 
-}
 }
 
 #endif //NUCLEUS_CONFIG_HPP

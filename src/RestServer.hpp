@@ -26,35 +26,39 @@
 #include "Platform.hpp"
 #include "restinio/all.hpp"
 
-using namespace restinio;
 
-    class RestServerRouter {
+class RestServerRouter {
 
-    public:
-        explicit RestServerRouter();
-        std::unique_ptr<router::express_router_t<>> getRouter();
-        void setRouter(std::unique_ptr<router::express_router_t<>>);
-        static RestServerRouter & getRestServerRouter();
+public:
+    explicit RestServerRouter();
+    std::unique_ptr<restinio::router::express_router_t<>> getRouter();
+    void setRouter(std::unique_ptr<restinio::router::express_router_t<>>);
+    static RestServerRouter & getRestServerRouter();
 
-    private:
-        std::unique_ptr<router::express_router_t<>> router;
-    };
+private:
+    using router_t = restinio::router::express_router_t<>;
+    std::unique_ptr<router_t> router = std::make_unique<router_t>();
+};
 
-    class RestServer {
+class RestServer {
 
-    public:
-        explicit RestServer( std::unique_ptr<router::express_router_t<>> router);
-        ~RestServer();
+public:
+    explicit RestServer( std::unique_ptr<restinio::router::express_router_t<>> router,
+                         const std::string& address = "localhost", int port = 80,
+                         size_t threads = 4);
+    ~RestServer();
+    RestServer(const RestServer&) = delete;
+    RestServer &operator=(const RestServer &) = delete;
 
-    private:
-        using my_traits_t = restinio::traits_t<
-                restinio::asio_timer_manager_t,
-                restinio::null_logger_t,
-                router::express_router_t<>>;
-        using my_server_t = restinio::http_server_t<my_traits_t>;
-        my_server_t my_server;
-        std::thread restinio_control_thread;
-    };
+private:
+    using my_traits_t = restinio::traits_t<
+            restinio::asio_timer_manager_t,
+            restinio::null_logger_t,
+            restinio::router::express_router_t<>>;
+    using my_server_t = restinio::http_server_t<my_traits_t>;
+    my_server_t my_server;
+    std::thread restinio_control_thread;
+};
 
 
 #endif //NUCLEUS_REST_HPP

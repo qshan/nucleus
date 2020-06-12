@@ -13,8 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-// TODO - implement better tracing eg via __func__, https://github.com/gabime/spdlog/issues/235
-
 #include <iostream>
 #include "Logging.hpp"
 #include "Config.hpp"
@@ -38,7 +36,7 @@ Logging::Logging(const std::string &name)
     std::array<spdlog::sink_ptr, 2> sinks {console_sink, file_sink};
 
     // Note - if missing log entries, need to increase these numbers
-    spdlog::init_thread_pool(LOG_SLOTS_K * 1024, LOG_THREADS );
+    spdlog::init_thread_pool(LOG_SLOTS_K, LOG_THREADS);
     mylog = std::make_shared<spdlog::async_logger>(name, sinks.begin(), sinks.end(),
             spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
 
@@ -46,7 +44,7 @@ Logging::Logging(const std::string &name)
 
     mylog->set_level(config::log_level);
 
-    mylog->flush_on(spdlog::level::warn);
+    mylog->flush_on(spdlog::level::info);
     spdlog::flush_every(std::chrono::seconds(5));
 
     mylog->info("Logging has been initialised with name {} and loglevel {} and saved to {}",
@@ -71,9 +69,4 @@ std::shared_ptr<spdlog::logger> &
 Logging::log() {
     return mylog;
 };
-
-Logging::~Logging() {
-    std::clog << "Closing logging " << std::endl;
-    //mylog.close?
-}
 

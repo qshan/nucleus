@@ -19,13 +19,12 @@
 // #define SPDLOG_FMT_EXTERNAL
 #include "spdlog/spdlog.h"
 
-#define LOG_SLOTS_K 16
-#define LOG_THREADS 2
+constexpr size_t LOG_SLOTS_K = 16 * 1024;
+constexpr size_t LOG_THREADS = 2;
 
 class Logging {
 
 public:
-    ~Logging();
     static Logging *init();
     static std::shared_ptr<spdlog::logger> &log();
 

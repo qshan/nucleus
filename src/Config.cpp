@@ -13,9 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-// TODO - keep track of start errors and add to logging once started
-// TODO - change const char* to strings
-
 #include <iostream>
 #include <regex>
 #include "ini.hpp"
@@ -34,9 +31,9 @@ namespace config
 
     int rest_port = 8080;
     std::string rest_address = "localhost";
-    int rest_threads = 4;
+    size_t rest_threads = 4;
 
-    std::string condition_path_exists = "";
+    std::string condition_path_exists;
 }
 
 bool config::load_config(int argc, char *argv[]) {
@@ -52,7 +49,7 @@ bool config::load_config(int argc, char *argv[]) {
     }
 
     if (ini_parse_string(args.c_str(), config::handler, nullptr) < 0) {
-        throw std::logic_error("Unable to parse configuration data. Check config file or command line args");
+        throw std::invalid_argument("Unable to parse configuration data. Check config file or command line args");
     }
 
     return true;
@@ -62,7 +59,8 @@ bool config::load_config(int argc, char *argv[]) {
 int config::handler(void* user, const char* section, const char* name, const char* value) {
 
     bool matched = false;
-    auto check_match = [section, name, &matched](std::string section_arg, std::string name_arg) -> bool {;
+
+    auto check_match = [section, name, &matched](const std::string& section_arg, const std::string& name_arg) {
         // This is a closure-style sub function used below to simplify parsing
         std::string name_part = std::regex_replace(name, std::regex("--"), "");
         auto found = (bool) ((section_arg == section) && (name_arg == name_part));
