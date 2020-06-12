@@ -11,7 +11,6 @@ INIH | https://github.com/benhoyt/inih | r46>> | 0a87bf16693e35ed172ce8738404d9a
 JSON.HPP | https://github.com/nlohmann/json | v3.7.0>> | f272ad533d32a40a3b2154a76f1ae9a45eacd6d3 |*|
 SPDLOG | https://github.com/gabime/spdlog |  v1.4.2 | 1549ff12f1aa61ffc4d9a8727c519034724392a0 |*| 
 FMT | https://github.com/fmtlib/fmt | 6.0.0 | Uses spdlog bundled version - see notes |*| 
-LIBPMEMOBJ++ | https://github.com/pmem/libpmemobj-cpp | v1.8 | 26c86b46997d25c818b246f2a143d2248503cc67 |*|  
 
 \* In Release, \>\> indicates a later commit was taken than the release to resolve issues or use latest at sync
 
@@ -45,7 +44,3 @@ ensuring ongoing compliance with the terms of these copyright owners.
 ### FMT
 1. Delete old ext/fmt directory
 2. Copy the spdlog/fmt/bundled directory into ext
-
-### LIBPMEMOBJ+++
-1. Delete the old ext/libpmemobj++ directory
-2. Copy the /include/libpmemobj++ directory into /ext

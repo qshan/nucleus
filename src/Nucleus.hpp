@@ -67,7 +67,8 @@ public:
         } catch (const pmem::transaction_scope_error &tse) {
             log->critical("Exception: pmem Transaction Scope Error: {} ",tse.what());
         } catch (const pmem::pool_error &pe) {
-            log->critical("Exception: pmem PoolManager Error: {}. Check pmem is mounted, space available, permissions are set",
+            log->critical("Exception: pmem PoolManager Error: {}. Check pmem is mounted, space available, "
+                          "permissions are set, layout is correct label",
                           pe.what());
         } catch (const std::logic_error &le) {
             log->critical("Exception: Std Logic Error: {}",le.what());

@@ -35,6 +35,8 @@ namespace config
     int rest_port = 8080;
     std::string rest_address = "localhost";
     int rest_threads = 4;
+
+    std::string condition_path_exists = "";
 }
 
 bool config::load_config(int argc, char *argv[]) {
@@ -84,6 +86,8 @@ int config::handler(void* user, const char* section, const char* name, const cha
     if (check_match("","rest_port")) { config::rest_port = std::stoi(value);}
     if (check_match("","rest_address")) { config::rest_address = value;}
     if (check_match("","rest_threads")) { config::rest_threads = std::stoi(value);}
+
+    if (check_match("","condition_path_exists")) { config::condition_path_exists = value; }
 
     if (!matched){
         std::string name_err = name;

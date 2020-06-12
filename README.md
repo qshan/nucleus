@@ -31,27 +31,29 @@ Firstly, you do not need actual persistent memory to get started! See further be
 for development and testing. By default Nucleus will use regular disk (although its slow). 
 
 ### Cross platform support
-At present Nucleus favors Linux - specifically Fedora v29+. It's quite likely you can get 
+At present Nucleus favors Linux - specifically Fedora v32+. It's quite likely you can get 
 other distributions running with not too much pain.  
 
 Nucleus can also be built on Windows via cmake, vcpkg and Visual Studio. Minimum is Microsoft "Visual Studio 15 2017 Win64". 
 
-### Dependencies requiring building or installing
+### Dependencies requiring installing or building
 
 At present there are these main dependencies:
+* [NDCTL](https://github.com/pmem/ndctl) minimum v60.1
 * [Persistent Memory Development Kit (PMDK)](https://github.com/pmem/pmdk) minimum v1.6
-* [NDCTL](https://github.com/pmem/ndctl) minimum v60.1 
+* [PMDK C++ Bindings](https://github.com/pmem/libpmemobj-cpp) minimum v1.8
 
-On Linux, you may need to build PMDK from sources depending on your distribution age.  
+On Linux, you may need to build these from sources depending on your distribution age.
 
-There are utility scripts ```setup-pmdk.sh``` and ```build-pmdk.sh```  in ```utils/``` that can help set up or build these pre-requisites for Fedora.
+There are utility scripts ```install-pmdk.sh``` and ```build-pmdk.sh```  in ```util/``` that can help 
+install (from package manager) or build these pre-requisites for Fedora.
 
 For Windows, you can install PMDK via vcpkg. See the instructions at the bottom
-of [this page](https://github.com/pmem/libpmemobj-cpp). Make sure to set your compile options to 64 bit too. 
+of [this page](https://github.com/pmem/libpmemobj-cpp). Make sure to set your compile options to 64 bit too.
 
 ### Building the Nucleus "Hello World" app
 
-On Linux this builds Nucleus our "hello world" example app in the ``examples/1-hellow_world`` directory:
+On Linux this builds Nucleus our "hello world" example app in the ``examples/1-hello_world`` directory:
 
 ```bash
 mkdir build
@@ -65,9 +67,9 @@ The default build type is Debug. Specify build type ``cmake -DCMAKE_BUILD_TYPE=R
 On Windows, there is a build helper called ```build.cmd``` that can help you build the example with cmake.
 
 ### Running
-The binary executable will be written to ``./build/bin/nucleus``. 
+The binary executable will be written to ``./build/bin/nucleus``.
 Run `./nucleus.sh` after confirming Nucleus binary file is in build/bin. This uses the ```nucleus.conf``` file in the base directory.
- 
+
 All entries in the conf file can also be specified on the command line, eg:
 ```bash
 ./build/bin/nucleus --config_file=nucleus.conf --log_level=trace
