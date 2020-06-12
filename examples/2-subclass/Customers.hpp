@@ -19,10 +19,18 @@
 
 using namespace pmem::obj;
 
+class Customers;
+
 // This is the vector element - ie a single customer.
 class Customer {
-    // TODO - add functions here for creation of individual customer vars and managing individual customer objects
+
+friend Customers;
+
 public:
+    explicit Customer(const std::string& name_arg = "", const std::string& city_arg = "", int order_count_arg = 0);
+    ~Customer();
+
+private:
     persistent_ptr<pmem::obj::string> p_name;
     persistent_ptr<pmem::obj::string> p_city;
     p<int> order_count;

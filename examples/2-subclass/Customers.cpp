@@ -22,6 +22,19 @@
 using namespace nucleus;
 using nlohmann::json;
 
+Customer::Customer(const std::string& name_arg, const std::string& city_arg, int order_count_arg) :
+    p_name(make_persistent<pmem::obj::string>(name_arg)),
+    p_city(make_persistent<pmem::obj::string>(city_arg)),
+    order_count(order_count_arg) {
+
+    Logging::log()->debug("Customer Persistent Constructor called with {} {} {}",
+                          p_name->c_str(), p_city->c_str(), order_count);
+
+}
+
+Customer::~Customer() {
+    Logging::log()->debug("Customer Persistent Destructor called for {}", p_name->c_str());
+}
 
 Customers::Customers()
     : p_customer_list{make_persistent<pmem::obj::vector<Customer>>()}
@@ -44,14 +57,14 @@ Customers::Initialize()
     // child objects->Initialize any child objects here;
     Logging::log()->trace("Customers is initializing");
 
-    // Add a sample customer
+    // Add sample customers
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
     pmem::obj::transaction::run(pop, [&] {
-        auto customer = Customer();
-        customer.p_name = make_persistent<string>("Peter");
-        customer.p_city = make_persistent<string>("Singapore");
-        customer.order_count = 26;
-        p_customer_list->push_back(std::move(customer));
+
+        p_customer_list->emplace_back("Peter", "Singapore", 26);
+        p_customer_list->emplace_back("Elizabeth", "Australia", 13);
+        p_customer_list->emplace_back("Mary", "Canada");
+
     });
 
 }
