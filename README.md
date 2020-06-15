@@ -67,12 +67,12 @@ The default build type is Debug. Specify build type ``cmake -DCMAKE_BUILD_TYPE=R
 On Windows, there is a build helper called ```build.cmd``` that can help you build the example with cmake.
 
 ### Running
-The binary executable will be written to ``./build/bin/nucleus``.
-Run `./nucleus.sh` after confirming Nucleus binary file is in build/bin. This uses the ```nucleus.conf``` file in the base directory.
+The binary executable will be written to `./bin/nucleus`.
+Run `./nucleus.sh` after confirming Nucleus binary file is in `./bin`. This uses the ```nucleus.conf``` file in the base directory.
 
 All entries in the conf file can also be specified on the command line, eg:
 ```bash
-./build/bin/nucleus --config_file=nucleus.conf --log_level=trace
+./bin/nucleus --config_file=nucleus.conf --log_level=trace
 ```
 
 ### Output
@@ -137,7 +137,7 @@ This holds application specific code, including the transactions required to cre
 We update the persistent variables in a transaction:
 
 ```cpp
-    pmem::obj::transaction::run(PoolManager::getPoolManager()->getPoolForTransaction(), [&] {
+    pmem::obj::transaction::run(pop, [&] {
         p_message->assign(message_value);
         p_update_count++;
     });

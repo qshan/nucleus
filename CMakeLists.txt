@@ -1,5 +1,5 @@
 # AxoMem Nucleus - for developing Persistent Applications
-# Copyright (C) 2018-2019 AxoMem Pte Ltd.
+# Copyright (C) 2018-2020 AxoMem Pte Ltd.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License Version 2 (only)
