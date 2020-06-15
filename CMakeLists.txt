@@ -61,17 +61,25 @@ include(FindThreads)
 
 find_package(PkgConfig QUIET)
 
-find_path(PMDK_INCLUDE_DIRS libpmemobj.h)
-find_library(PMDK_LIBPMEMOBJ_LIBRARY NAMES libpmemobj libpmemobj.so HINTS /usr/local/lib64/)
+set(LIBPMEMOBJ_CPP_REQUIRED_VERSION 1.8)
+set(LIBPMEMOBJ_REQUIRED_VERSION 1.6)
 
-set(LIBPMEMOBJ_CPP_REQUIRED_VERSION 1.9)
-
-message (STATUS "Found PMDK include headers in ${PMDK_INCLUDE_DIRS}" )
-message (STATUS "Found PMDK LIBPMEMOBJ library in ${PMDK_LIBPMEMOBJ_LIBRARY}" )
-
-if(NOT PMDK_INCLUDE_DIRS OR NOT PMDK_LIBPMEMOBJ_LIBRARY)
-    message(FATAL_ERROR "Unable to find PMDK LIBMEMOBJ - check messages above.")
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(LIBPMEMOBJ++ REQUIRED libpmemobj++>=${LIBPMEMOBJ_CPP_REQUIRED_VERSION})
+else()
+    find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
+    message(STATUS "libpmemobj++ found without pkg-config (legacy)")
 endif()
+# There are no include or library dirs - will be found via standard includes...
+
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj>=${LIBPMEMOBJ_REQUIRED_VERSION})
+else()
+    find_package(LIBPMEMOBJ REQUIRED ${LIBPMEMOBJ_REQUIRED_VERSION})
+    message(STATUS "libpmemobj found without pkg-config (legacy)")
+endif()
+
+message (STATUS "LIBPMEMOBJ libaries in ${LIBPMEMOBJ_LIBRARIES} " )
 
 file(GLOB SOURCES_CORE ./src/*.cpp)
 set (CORE_INCLUDE_DIRS ./src)
@@ -84,6 +92,15 @@ add_executable(nucleus ${SOURCES_APP} ${SOURCES_CORE} ${SOURCES_EXT} )
 target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${CORE_INCLUDE_DIRS} ${EXT_INCLUDE_DIRS} ${APP_INCLUDE_DIRS} libpmemobj++)
 target_link_libraries(nucleus ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${LIBPMEMOBJ++_LIBRARIES})
 
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+add_custom_command(TARGET nucleus POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nucleus> ${CMAKE_SOURCE_DIR}/bin/
+)
+
+
+# === Install target ===================================================================================================
+install(TARGETS nucleus DESTINATION /usr/local/bin COMPONENT binaries)
+install(FILES nucleus.conf DESTINATION /etc/nucleus COMPONENT config)
+install(FILES util/nucleus.service DESTINATION /usr/lib/systemd/system/ COMPONENT daemon)
+install(CODE "MESSAGE(\"\n*** Ensure to edit /etc/nucleus/nucleus.conf and add relevant configuration settings.\")")
+install(CODE "MESSAGE(\"*** Then run systemctl daemon-reload, systemctl start nucleus, systemctl status nucleus and systemctl enable nucleus\")")

@@ -31,14 +31,16 @@
 .idea
 
 # CMAKE
-cmake-build-*
+/cmake-build-*
 
 # LIB SPECIFIC
-build/*
-*.pmem
-*.log
+/bin/*
+/build/*
+/build-*
 /build-*.cmd
 /build-*.sh
+*.pmem
+*.log
 
 # USER APP
 /myapp/*

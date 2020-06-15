@@ -1,15 +1,14 @@
 # **Nucleus: For Persistent Memory Native Applications**
 
-_Nucleus_ is an experimental library intended to accelerate building applications that run natively on 
-persistent memory (pmem). Persistent Applications have the following characteristics:
+**Nucleus** helps accelerate building applications that run natively on 
+persistent memory (pmem). _Persistent Applications_ have the following characteristics:
 
 * Application data and state is held in persistent memory. 
 * Data and state survive application restarts, server restarts, power failures etc.
 * No serialisation of data to an external data store is required to ensure persistence. 
-* They tend to be extremely fast as they are operating on the memory bus and use byte-level addressing.
 
-Persistent Application development is still in its infancy and there is much to be learned.
-However, the rewards we are targeting include:
+Persistent Application development is still relatively new and there is much to be learned.
+The rewards we are targeting include:
 
 * **Several orders of magnitude increase in speed**, resulting in less wastage of CPU cycles, less hardware, and less energy.
 * **Faster application development cycles**, since there are fewer layers in which different expertise is needed and where things can go wrong
@@ -23,15 +22,16 @@ Key features include:
 
 * A framework to initialise your application data and state as persistent objects
 * Persistent Memory Pool management to open and close pools
-* Pre-integrated ReST API server, Logging system and conf-based configuration 
-* Applications built on the Nucleus framework have been tested on [Intel&reg; Optane&trade; DC Persistent Memory](https://www.intel.sg/content/www/xa/en/architecture-and-technology/optane-dc-persistent-memory.html).
+* Pre-integrated ReST API server, Logging system and conf-based configuration
+* SystemD unit setup to run apps as a server (daemon) - Windows service in backlog
+* Tested on actual [Intel&reg; Optane&trade; DC Persistent Memory](https://www.intel.sg/content/www/xa/en/architecture-and-technology/optane-dc-persistent-memory.html).
 
 ## Getting started 
 Firstly, you do not need actual persistent memory to get started! See further below for how to emulate pmem
 for development and testing. By default Nucleus will use regular disk (although its slow). 
 
 ### Cross platform support
-At present Nucleus favors Linux - specifically Fedora v32+. It's quite likely you can get 
+At present Nucleus favors Linux - specifically Fedora v31+. It's quite likely you can get 
 other distributions running with not too much pain.  
 
 Nucleus can also be built on Windows via cmake, vcpkg and Visual Studio. Minimum is Microsoft "Visual Studio 15 2017 Win64". 
@@ -180,10 +180,23 @@ in the ```nucleus.conf``` file or command line:
 ```
 pool_main_file=/mnt/pmem0/nucleus.pmem 
 ```
-There is also a utility file ```env.sh``` to help mount pmem on server or development machines. 
+There is also a utility file `env.sh` to help mount pmem on server or development machines. 
 
 For more information on emulating pmem, see 
 [Creating Development Environments](https://docs.pmem.io/getting-started-guide/creating-development-environments)
+
+## Installing as a Daemon (server)
+
+### Linux
+Nucleus can run as a Daemon under SystemD using the simple service model. A unit file is provided. 
+
+1. From your build directory run `make install`. This will install the most recently compiled binary to the system.
+2. Edit the conf file in `/etc/nucleus/nucleus.config` then run `sudo systemctl daemon-reload` to reload configuration.
+3. Run `sudo systemctl start nucleus` to start then `sudo systemctl status nucleus` to check status. 
+4. To run Nucleus at startup, run `sudo systemctl enable nucleus`  
+
+### Windows
+Windows service installation is in backlog. Vote for it [here](https://github.com/axomem/nucleus/issues/41).
 
 ## Documentation
 The main guidance at present is this README.md file. Further documentation is coming.  

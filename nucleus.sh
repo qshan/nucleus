@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see http://www.gnu.org/licenses/
 
-if [ ! -f ./build/bin/nucleus ]; then
+if [ ! -f ./bin/nucleus ]; then
     echo "NUCLEUS executable not found. See README.MD for how to build your app"
     exit 1
 fi
 while true
 do
-    ./build/bin/nucleus --config_file=./nucleus.conf "$@"
+    ./bin/nucleus --config_file=./nucleus.conf "$@"
     retVal=$?
     if [ $retVal -eq 0 ]; then
         echo "Exiting normally - no loop"

@@ -90,6 +90,7 @@ public:
         sigemptyset(&custom_handler.sa_mask);
         custom_handler.sa_flags = 0;
         sigaction(SIGINT, &custom_handler, nullptr);
+        sigaction(SIGTERM, &custom_handler, nullptr);
     #else
         if (!SetConsoleCtrlHandler( (PHANDLER_ROUTINE) win_ctrlc_handler, TRUE)) {
             Logging::log()->warn("WARNING: Could not set CTRL-C handler");
@@ -123,6 +124,7 @@ public:
             #ifndef _WIN32
                 struct sigaction default_action = {{SIG_DFL}};
                 sigaction(SIGINT, &default_action, nullptr);
+                sigaction(SIGTERM, &default_action, nullptr);
             #else
                 SetConsoleCtrlHandler(NULL, FALSE);
             #endif

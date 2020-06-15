@@ -14,6 +14,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see http://www.gnu.org/licenses/
 
-msg=$'This script not yet developed. For now see build instructions for Linux in README.MD, or see build.cmd
-for an example build script'
+msg=$'See build instructions for Linux in README.MD'
 echo ${msg}
