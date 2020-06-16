@@ -16,13 +16,19 @@
 cmake_minimum_required(VERSION 3.3)
 project(nucleus)
 
-# ------------------------------------------------------------------------------------
-# These set the App directories to compile with Nucleus
-set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/1-hello_world")
-# set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/2-subclass")
 
-# Comment out the above and use this line for your own test app.
-# set (APP_DIR "${CMAKE_SOURCE_DIR}/myapp")
+# === Choose which app to build ========================================================================================
+
+ # Set App Dir to your App Source directory containing main.cpp
+if (NOT APP_DIR)
+    # Set the App directories to compile an example if no App dir specified
+    # Specify -DBUILD_EXAMPLE=example_name to build an example
+    if (NOT BUILD_EXAMPLE)
+        set (BUILD_EXAMPLE 1-hello_world)
+    endif()
+
+    set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/${BUILD_EXAMPLE}")
+endif()
 
 # Another option is to include Nucleus as a submodule in your own project.
 # ------------------------------------------------------------------------------------
@@ -33,16 +39,22 @@ else()
     message(FATAL_ERROR "Unable to file ${APP_DIR}/main.cpp needed for compiling the example or your app.")
 endif()
 
-file(GLOB SOURCES_APP ${APP_DIR}/*.cpp)
-set(APP_INCLUDE_DIRS ${APP_DIR})
+if (NOT APP_NAME)
+    get_filename_component(APP_NAME ${APP_DIR} NAME)
+    message(STATUS "App Name defaulted to ${APP_NAME} from last directory in APP_DIR")
+else()
+    message(STATUS "App Name is set to ${APP_NAME}")
+endif()
 
 
-set(CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
+# === Set compiler definitions =========================================================================================
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
-endif (NOT CMAKE_BUILD_TYPE)
+endif()
+
+set(CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
     add_definitions("/W3" "/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
@@ -57,6 +69,9 @@ else()
     endif()
 endif()
 
+
+# === Set dependencies =================================================================================================
+
 include(FindThreads)
 
 find_package(PkgConfig QUIET)
@@ -70,7 +85,8 @@ else()
     find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
     message(STATUS "libpmemobj++ found without pkg-config (legacy)")
 endif()
-# There are no include or library dirs - will be found via standard includes...
+set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set vars for LIBPMEMOBJ++ yet.
+message (STATUS "LIBPMEMOBJ++ INCLUDE DIRS = ${LIBPMEMOBJ++_INCLUDE_DIRS}")
 
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj>=${LIBPMEMOBJ_REQUIRED_VERSION})
@@ -78,29 +94,63 @@ else()
     find_package(LIBPMEMOBJ REQUIRED ${LIBPMEMOBJ_REQUIRED_VERSION})
     message(STATUS "libpmemobj found without pkg-config (legacy)")
 endif()
-
 message (STATUS "LIBPMEMOBJ libaries in ${LIBPMEMOBJ_LIBRARIES} " )
 
-file(GLOB SOURCES_CORE ./src/*.cpp)
-set (CORE_INCLUDE_DIRS ./src)
 
-file(GLOB SOURCES_EXT ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
-set (EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
+# === Build src vars and include directories for target ================================================================
 
-add_executable(nucleus ${SOURCES_APP} ${SOURCES_CORE} ${SOURCES_EXT} )
+file(GLOB SOURCES_APP ${APP_DIR}/*.cpp)
+set(APP_INCLUDE_DIRS ${APP_DIR})
 
-target_include_directories(nucleus PUBLIC ${PMDK_INCLUDE_DIRS} ${CORE_INCLUDE_DIRS} ${EXT_INCLUDE_DIRS} ${APP_INCLUDE_DIRS} libpmemobj++)
-target_link_libraries(nucleus ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${LIBPMEMOBJ++_LIBRARIES})
+file(GLOB SOURCES_NUCLEUS ./src/*.cpp)
+set (NUCLEUS_INCLUDE_DIRS ./src)
 
-add_custom_command(TARGET nucleus POST_BUILD
+file(GLOB SOURCES_NUCLEUS_EXT ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
+set (NUCLEUS_EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
+
+add_executable(${APP_NAME} ${SOURCES_APP} ${SOURCES_NUCLEUS} ${SOURCES_NUCLEUS_EXT} )
+
+target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_DIRS} ${NUCLEUS_INCLUDE_DIRS} ${NUCLEUS_EXT_INCLUDE_DIRS} ${LIBPMEMOBJ++_INCLUDE_DIRS})
+target_link_libraries(${APP_NAME} ${APP_LIBRARIES} ${LIBPMEMOBJ++_LIBRARIES} ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+
+# Copy the target to the bin directory post build for easier use
+add_custom_command(TARGET ${APP_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:nucleus> ${CMAKE_SOURCE_DIR}/bin/
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
 )
 
 
+# === Testing ==========================================================================================================
+
+ENABLE_TESTING()
+list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Requires CMAKE 3.17
+# list(APPEND CMAKE_CTEST_ARGUMENTS "--verbose")  # Requires CMAKE 3.17
+ADD_SUBDIRECTORY(test)
+
+
 # === Install target ===================================================================================================
-install(TARGETS nucleus DESTINATION /usr/local/bin COMPONENT binaries)
-install(FILES nucleus.conf DESTINATION /etc/nucleus COMPONENT config)
-install(FILES util/nucleus.service DESTINATION /usr/lib/systemd/system/ COMPONENT daemon)
-install(CODE "MESSAGE(\"\n*** Ensure to edit /etc/nucleus/nucleus.conf and add relevant configuration settings.\")")
-install(CODE "MESSAGE(\"*** Then run systemctl daemon-reload, systemctl start nucleus, systemctl status nucleus and systemctl enable nucleus\")")
+
+install(TARGETS ${APP_NAME} DESTINATION /usr/local/bin COMPONENT binaries)
+install(FILES nucleus.conf DESTINATION /etc/nucleus/${APP_NAME}.conf COMPONENT config)
+install(FILES util/nucleus.service DESTINATION /usr/lib/systemd/system/${APP_NAME}.service COMPONENT daemon)
+install(CODE "MESSAGE(\"\n*** Ensure to edit /etc/${APP_NAME}/${APP_NAME}.conf and add relevant configuration settings.\")")
+install(CODE "MESSAGE(\"*** Then run systemctl daemon-reload, systemctl start ${APP_NAME}, systemctl status ${APP_NAME} and systemctl enable ${APP_NAME}\")")
+
+
+# === RPM Packaging ====================================================================================================
+
+set(CPACK_PACKAGE_VERSION ${VERSION})
+set(CPACK_GENERATOR "RPM")
+set(CPACK_PACKAGE_NAME ${APP_NAME})
+set(CPACK_PACKAGE_RELEASE 1)
+# set(CPACK_PACKAGE_CONTACT "Name")
+# set(CPACK_PACKAGE_VENDOR "Company")
+set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr /usr/local /usr/local/bin /etc /etc/${APPNAME} /usr/lib /usr/lib/systemd /usr/lib/systemd/system)
+
+#configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup/thingbase.rpm.spec" "${CMAKE_CURRENT_BINARY_DIR}/thingbase.rpm.spec" @ONLY IMMEDIATE)
+#set(CPACK_RPM_USER_BINARY_SPECFILE "${CMAKE_CURRENT_BINARY_DIR}/thingbase.rpm.spec")
+
+include(CPack)
+
