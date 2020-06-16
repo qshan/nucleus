@@ -15,9 +15,8 @@
 
 #ifndef MYAPP_H
 #define MYAPP_H
-#include "Nucleus.hpp"
 
-using namespace pmem::obj;
+#include "Platform.hpp"
 
 class MyApp {
 
@@ -29,10 +28,12 @@ public:
     void Start();       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
 
+    inline static const int layout_version = 0;
+
 private:
     // These are the persistent memory objects for this application.
-    persistent_ptr<string> p_message;
-    p<int> p_update_count;
+    pmem::obj::persistent_ptr<pmem::obj::string> p_message;
+    pmem::obj::p<int> p_update_count;
 
 };
 

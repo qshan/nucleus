@@ -16,8 +16,7 @@
 #ifndef CUSTOMER_H
 #define CUSTOMER_H
 #include "Nucleus.hpp"
-
-using namespace pmem::obj;
+#include <string>
 
 class Customers;
 
@@ -31,9 +30,9 @@ public:
     ~Customer();
 
 private:
-    persistent_ptr<pmem::obj::string> p_name;
-    persistent_ptr<pmem::obj::string> p_city;
-    p<int> order_count;
+    pmem::obj::persistent_ptr<pmem::obj::string> p_name;
+    pmem::obj::persistent_ptr<pmem::obj::string> p_city;
+    pmem::obj::p<int> order_count;
 };
 
 // This is the container -ie vector of customer
@@ -52,7 +51,7 @@ public:
 
 private:
     // These are the persistent memory objects for this class
-    persistent_ptr<pmem::obj::vector<Customer>> p_customer_list;
+    pmem::obj::persistent_ptr<pmem::obj::vector<Customer>> p_customer_list;
 };
 
 #endif //CUSTOMER_H

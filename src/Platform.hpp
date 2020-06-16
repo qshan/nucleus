@@ -29,6 +29,10 @@
 // Issue with FMT - spdlog and restinio both use?
 #define FMT_HEADER_ONLY
 
+#include "fmt/format.h"
+
+#include "json.hpp"
+
 // PMDK common includes
 #include <libpmemobj++/persistent_ptr.hpp>
 #include <libpmemobj++/pool.hpp>

@@ -42,8 +42,10 @@ namespace nucleus {
     class AppManager {
 
     public:
+
         AppManager():
-                pool_manager{PoolManager<AppPool<A>>(config::pool_main_file)}
+                pool_manager{PoolManager<AppPool<A>>(config::pool_main_file,
+                                                     fmt::format("{}__v{}", typeid(A).name(), A::layout_version))}
         {
             Logging::log()->trace("Constructing AppManager");
             auto app_pool = pool_manager.pool();

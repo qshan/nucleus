@@ -13,15 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-#include "PoolManager.hpp"
 #include "MyApp.hpp"
 #include "RestServer.hpp"
-#include "json.hpp"
-#include "fmt/format.h"
 
 using namespace nucleus;
-using nlohmann::json;
-
+using namespace pmem::obj;
 
 MyApp::MyApp()
     : p_customers{make_persistent<Customers>()}

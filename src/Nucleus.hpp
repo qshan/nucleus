@@ -34,8 +34,8 @@ public:
     Nucleus (int argc, char *argv[]) {
 
         executable_name = std::filesystem::path(argv[0]).filename();
-        // Load configuration manager first. Needed for log settings
 
+        // Load configuration manager first. Needed for log settings
         try {
             nucleus::config::load_config(executable_name, argc, argv);
         } catch (const std::invalid_argument &exc) {
@@ -75,9 +75,9 @@ public:
         } catch (const pmem::transaction_scope_error &tse) {
             log->critical("Exception: pmem Transaction Scope Error: {} ",tse.what());
         } catch (const pmem::pool_error &pe) {
-            log->critical("Exception: pmem PoolManager Error: {}. Check pmem is mounted, space available, "
-                          "permissions are set, layout is correct label",
-                          pe.what());
+            log->critical("Exception: pmem PoolManager Error: {}", pe.what());
+            log->info("Check pmem is mounted, space available, permissions are set, layout is correct label");
+
         } catch (const std::exception &exc) {
             log->critical("Exception: General: {}", exc.what());
         }

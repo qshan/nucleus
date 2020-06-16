@@ -16,8 +16,9 @@
 #ifndef NUCLEUS_POOL_H
 #define NUCLEUS_POOL_H
 
+#include <typeinfo>
+#include <filesystem>
 #include "Platform.hpp"
-#define LAYOUT_NAME "myapp_v0.0.1"
 
 
 namespace nucleus {
@@ -26,21 +27,31 @@ template <class N>
 class PoolManager {
 
 public:
-    explicit PoolManager(const std::string &fileName_arg) : file_name(fileName_arg) {
-        Logging::log()->debug("Creating PoolManager with pool file {}", file_name);
+    explicit PoolManager(const std::string &fileName_arg, const std::string &layout_arg) : file_name(fileName_arg) {
 
-        if (pmem::obj::pool<N>::check(file_name, LAYOUT_NAME) == 1) {
+        Logging::log()->debug("PoolManager::() with pool file name {} and layout {}", file_name, layout_arg);
 
-            Logging::log()->info("Opening existing pool {}", file_name);
-            my_pool = pmem::obj::pool<N>::open(file_name, LAYOUT_NAME);
+        if (std::filesystem::exists(std::filesystem::path(file_name))) {
+            if (pmem::obj::pool<N>::check(file_name, layout_arg) == 1) {
+
+                Logging::log()->info("Opening existing pool {} with layout {}", file_name, layout_arg);
+                my_pool = pmem::obj::pool<N>::open(file_name, layout_arg);
+
+            } else {
+
+                throw pmem::pool_error(fmt::format("PMem pool file check failed during open."
+                                                       "Check label matches {} via pmempool info.", layout_arg));
+
+            }
 
         } else {
 
-            Logging::log()->info("Creating new pool {} with layout '{}' and size {}", file_name, LAYOUT_NAME, config::pool_main_size);
-            my_pool = pmem::obj::pool<N>::create(
-                    file_name, LAYOUT_NAME, config::pool_main_size);
-            Logging::log()->info("Pool successfully created.");
-            Logging::log()->warn("Please remember Nucleus is alpha. Things *will* change and there *will* be bugs!");
+                Logging::log()->info("Creating new pool {} with layout '{}' and size {}", file_name, layout_arg,
+                                     config::pool_main_size);
+                my_pool = pmem::obj::pool<N>::create(file_name, layout_arg, config::pool_main_size);
+
+                Logging::log()->info("Pool successfully created.");
+                Logging::log()->warn("Please remember this is an Alpha version of Nucleus");
 
         }
 
