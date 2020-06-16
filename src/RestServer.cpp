@@ -68,6 +68,7 @@ RestServerRouter::getRestServerRouter() {
 }
 
 // --------------------
+// TODO - also need to catch 'std::system_error' bind: Address already in use here. ideally abort Nucleus?
 
 RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router,
                        const std::string& address_arg, int port_arg,

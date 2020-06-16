@@ -18,6 +18,8 @@
 
 #include "Platform.hpp"
 #include "AppManager.hpp"
+#include <sstream>
+#include <filesystem>
 
 namespace nucleus {
 
@@ -31,23 +33,30 @@ public:
 
     Nucleus (int argc, char *argv[]) {
 
+        executable_name = std::filesystem::path(argv[0]).filename();
         // Load configuration manager first. Needed for log settings
-        try {
-            config::load_config(argc, argv);
-        } catch (const std::exception &exc) {
-            //std::cerr << "Error: " << exc.what() << std::endl;
-            throw std::runtime_error(fmt::format("Error loading configuration: {}", exc.what()));
-        }
 
-        // Load Logging Manager
-        Logging::init();
+        try {
+            nucleus::config::load_config(executable_name, argc, argv);
+        } catch (const std::exception &exc) {
+            configuration_error = fmt::format("Error loading configuration: {}", exc.what());
+        }
 
     }
 
     int Run()
     {
         int exitCode = EXIT_FAILURE;
+
+        if (not configuration_error.empty()) {
+            print_help();
+            return exitCode;
+        }
+
+        // Load Logging Manager
+        Logging::init();
         auto log = Logging::log();
+
         log->info("Nucleus is starting");
 
         try {
@@ -70,8 +79,6 @@ public:
             log->critical("Exception: pmem PoolManager Error: {}. Check pmem is mounted, space available, "
                           "permissions are set, layout is correct label",
                           pe.what());
-        } catch (const std::logic_error &le) {
-            log->critical("Exception: Std Logic Error: {}",le.what());
         } catch (const std::exception &exc) {
             log->critical("Exception: General: {}", exc.what());
         }
@@ -79,6 +86,11 @@ public:
         log->info("Exiting Nucleus with exit status {}", exitCode);
         return exitCode;
     }
+
+private:
+
+    std::string executable_name;
+    std::string configuration_error;
 
     void set_signal_handlers(){
         // Install CTRL-C handler to try exit gracefully.
@@ -132,6 +144,30 @@ public:
 
     };
 
+    void print_help() {
+
+        std::stringstream usage;
+        usage << std::endl << "Usage: " << executable_name << " [OPTIONS]" << std::endl
+              << "Options:" << std::endl
+              << "  -h --help                  This Help information. See conf file for more details on arguments." << std::endl
+              << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << executable_name << ".pmem" << std::endl
+              << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
+              << "  --log_file=filename        Log file path and name. Default is ./" << executable_name << ".log" << std::endl
+              << "  --log_level=level          error, warn, info, debug, trace" << std::endl
+              << "  --rest_address=localhost   ReST Server address in name or IP format (see conf for external access)" << std::endl
+              << "  --rest_port=8080           ReST Server port number" << std::endl
+              << "  --rest_threads=4           Number of threads for ReST server" << std::endl
+              << "  --condition_path=filename  Server will exit if this specified path and file doesn't exist" << std::endl
+              << std::endl;
+
+        if (configuration_error != "HELP") {
+            std::cerr << std::endl <<  configuration_error << std::endl;
+            std::cerr << usage.str();
+        } else {
+            std::cout << usage.str();
+        }
+
+    }
 };
 
 // These initialise static members for the templated class

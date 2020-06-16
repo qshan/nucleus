@@ -152,10 +152,10 @@ namespace nucleus {
         };
 
         void CheckConditionPathExists() {
-            if (not config::condition_path_exists.empty()) {
-                if (not std::filesystem::exists(config::condition_path_exists)) {
+            if (not config::condition_path.empty()) {
+                if (not std::filesystem::exists(config::condition_path)) {
                     Exit(fmt::format("Condition path is specified but does not or no longer exists."
-                                     " Path is {}", config::condition_path_exists));
+                                     " Path is {}", config::condition_path));
                 }
             }
         }

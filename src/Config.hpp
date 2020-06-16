@@ -21,8 +21,9 @@
 
 namespace nucleus::config
 {
-    bool load_config(int argc, char *argv[]);
+    bool load_config(const std::string& name, int argc, char *argv[]);
     int handler(void* user, const char* section, const char* name, const char* value);
+    std::string args_to_string(int argc, char *argv[]);
 
     // These are the config values to use.
     // Also add to Config.cpp and nucleus.conf.template
@@ -41,7 +42,7 @@ namespace nucleus::config
     extern size_t rest_threads;
 
     // For Testing or without ReST Server
-    extern std::string condition_path_exists;
+    extern std::string condition_path;
 
 }
 

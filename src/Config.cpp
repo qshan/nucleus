@@ -19,36 +19,42 @@
 #include "Config.hpp"
 #include "Logging.hpp"
 
-namespace nucleus {
-namespace config
+
+namespace nucleus::config
 {
-// These are default settings.
 
-    spdlog::level::level_enum log_level = spdlog::level::debug;
-    std::string log_file = "./nucleus.log";
-    size_t pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
-    std::string pool_main_file = "./nucleus.pmem"; // note - replaced below if argv
+    // declare globals
+    spdlog::level::level_enum log_level;
+    std::string log_file;
+    size_t pool_main_size;
+    std::string pool_main_file;
 
-    int rest_port = 8080;
-    std::string rest_address = "localhost";
-    size_t rest_threads = 4;
+    int rest_port;
+    std::string rest_address;
+    size_t rest_threads;
 
-    std::string condition_path_exists;
-}
+    std::string condition_path;
 
-bool config::load_config(int argc, char *argv[]) {
+
+bool load_config(const std::string& executable_name_arg, int argc, char *argv[]) {
+
+    // These are default settings.
+    config::log_level = spdlog::level::debug;
+    config::log_file = fmt::format("./{}.log", executable_name_arg);
+    config::pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
+    config::pool_main_file = fmt::format("./{}.pmem", executable_name_arg);
+
+    config::rest_port = 8080;
+    config::rest_address = "localhost";
+    config::rest_threads = 4;
+
+    // condition_path = "";
 
     if (argc < 2) return false;
 
-    // convert args to a conf-file like string so we can process command line like file entries.
-    // Note: command line overrides file
-    std::string args;
-    for (int i = 1; i < argc; i++) {
-        args += argv[i];
-        args += "\r\n";
-    }
+    auto string_args = args_to_string(argc, argv);
 
-    if (ini_parse_string(args.c_str(), config::handler, nullptr) < 0) {
+    if (ini_parse_string(string_args.c_str(), config::handler, nullptr) < 0) {
         throw std::invalid_argument("Unable to parse configuration data. Check config file or command line args");
     }
 
@@ -56,14 +62,13 @@ bool config::load_config(int argc, char *argv[]) {
 }
 
 
-int config::handler(void* user, const char* section, const char* name, const char* value) {
+int handler(void* user, const char* section, const char* name, const char* value) {
 
     bool matched = false;
 
     auto check_match = [section, name, &matched](const std::string& section_arg, const std::string& name_arg) {
         // This is a closure-style sub function used below to simplify parsing
-        std::string name_part = std::regex_replace(name, std::regex("--"), "");
-        auto found = (bool) ((section_arg == section) && (name_arg == name_part));
+        auto found = (bool) ((section_arg == section) && (name_arg == name));
         if (found) {
             matched = true;
         }
@@ -79,13 +84,19 @@ int config::handler(void* user, const char* section, const char* name, const cha
     if (check_match("","log_level")) { config::log_level = spdlog::level::from_str(value); }
 
     if (check_match("","pool_main_file")) { config::pool_main_file = value; }
-    if (check_match("","pool_main_size")) { config::pool_main_size = (size_t) std::stol(value) * 1024 * 1024; }
+
+    if (check_match("","pool_main_size")) {
+        config::pool_main_size = (size_t) std::stol(value) * 1024 * 1024;
+        if (pool_main_size < 8 * 1024 * 1024) { // PMEMOBJ_MIN_POOL
+            throw std::invalid_argument("Minimum pool size is 8MiB");
+        }
+    }
 
     if (check_match("","rest_port")) { config::rest_port = std::stoi(value);}
     if (check_match("","rest_address")) { config::rest_address = value;}
     if (check_match("","rest_threads")) { config::rest_threads = std::stoi(value);}
 
-    if (check_match("","condition_path_exists")) { config::condition_path_exists = value; }
+    if (check_match("","condition_path")) { config::condition_path = value; }
 
     if (!matched){
         std::string name_err = name;
@@ -94,4 +105,31 @@ int config::handler(void* user, const char* section, const char* name, const cha
 
     return matched;
 }
+
+std::string
+args_to_string(int argc, char *argv[] ) {
+    // convert args to a conf-file like string so we can process command line like file entries.
+    // Note: command line overrides file
+    std::string args;
+    for (int i = 1; i < argc; i++) {
+        std::string arg_part = std::regex_replace(argv[i], std::regex("-"), "");
+
+        // Make sure the parameter has an = sign
+        if (arg_part.find('=') == std::string::npos) {
+            throw std::invalid_argument(fmt::format("Invalid command line parameter {}. "
+                                                    "Format is --setting_name=value", arg_part));
+        }
+
+        // check if the user asked for help
+        if (arg_part[0] == 'h') {
+            throw std::invalid_argument("HELP");
+        }
+
+        // Add to the string.
+        args += arg_part;
+        args += "\r\n";
+    }
+    return args;
+}
+
 }
