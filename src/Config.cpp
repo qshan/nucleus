@@ -112,17 +112,16 @@ args_to_string(int argc, char *argv[] ) {
     // Note: command line overrides file
     std::string args;
     for (int i = 1; i < argc; i++) {
-        std::string arg_part = std::regex_replace(argv[i], std::regex("-"), "");
+        std::string arg_part = std::regex_replace(argv[i], std::regex("^([-\\/]+)"), "");
+        // check if the user asked for help
+        if (arg_part[0] == 'h') {
+            throw std::invalid_argument("HELP");
+        }
 
         // Make sure the parameter has an = sign
         if (arg_part.find('=') == std::string::npos) {
             throw std::invalid_argument(fmt::format("Invalid command line parameter {}. "
                                                     "Format is --setting_name=value", arg_part));
-        }
-
-        // check if the user asked for help
-        if (arg_part[0] == 'h') {
-            throw std::invalid_argument("HELP");
         }
 
         // Add to the string.

@@ -38,8 +38,8 @@ public:
 
         try {
             nucleus::config::load_config(executable_name, argc, argv);
-        } catch (const std::exception &exc) {
-            configuration_error = fmt::format("Error loading configuration: {}", exc.what());
+        } catch (const std::invalid_argument &exc) {
+            configuration_error = exc.what();
         }
 
     }
@@ -49,8 +49,7 @@ public:
         int exitCode = EXIT_FAILURE;
 
         if (not configuration_error.empty()) {
-            print_help();
-            return exitCode;
+            return print_help();
         }
 
         // Load Logging Manager
@@ -144,12 +143,12 @@ private:
 
     };
 
-    void print_help() {
+    int print_help() {
 
         std::stringstream usage;
         usage << std::endl << "Usage: " << executable_name << " [OPTIONS]" << std::endl
               << "Options:" << std::endl
-              << "  -h --help                  This Help information. See conf file for more details on arguments." << std::endl
+              << "  -h --help                  This help information. See conf file for more details on arguments." << std::endl
               << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << executable_name << ".pmem" << std::endl
               << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
               << "  --log_file=filename        Log file path and name. Default is ./" << executable_name << ".log" << std::endl
@@ -160,11 +159,13 @@ private:
               << "  --condition_path=filename  Server will exit if this specified path and file doesn't exist" << std::endl
               << std::endl;
 
-        if (configuration_error != "HELP") {
+        if (configuration_error.compare("HELP") != 0) {
             std::cerr << std::endl <<  configuration_error << std::endl;
             std::cerr << usage.str();
+            return EXIT_FAILURE;
         } else {
             std::cout << usage.str();
+            return EXIT_SUCCESS;  // since they asked for help
         }
 
     }
