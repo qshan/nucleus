@@ -16,42 +16,70 @@
 cmake_minimum_required(VERSION 3.3)
 project(nucleus)
 
-
 # === Choose which app to build ========================================================================================
 
- # Set App Dir to your App Source directory containing main.cpp
-if (NOT APP_DIR)
-    # Set the App directories to compile an example if no App dir specified
+# If building your own app within tree, place it in ./MyApp. This will work for simple tests but for more complex
+# projects its better to make Nucleus a subdirectory of your project and include it as git submodule (for example)
+
+# To use nucleus in a subdirectory of your project, add your own CMakeLists.txt at the top level and include:
+# set(APP_NAME your_app_name)
+# set(APP_SOURCES ...)   # list of files
+# set(APP_INCLUDE_DIRS ...)  # list of include dirs
+# set(APP_LIBRARIES ...) # list of additional libs (optional)
+# ADD_SUBDIRECTORY(nucleus)
+
+if (APP_NAME)
+
+    message (STATUS "Found preset APP_NAME ${APP_NAME}" )
+
+    if (NOT APP_SOURCES)
+        message (FATAL_ERROR "No APP_SOURCES found")
+    endif()
+    # message (STATUS "APP_SOURCES: ${APP_SOURCES}")
+
+    if (NOT APP_INCLUDE_DIRS)
+        message (FATAL_ERROR "No APP_INCLUDE_DIRS found")
+    endif()
+    # message (STATUS "APP_INCLUDE_DIRS: ${APP_INCLUDE_DIRS}")
+
+    # message (STATUS "APP_LIBRARIES: ${APP_LIBRARIES}")
+
+else()
+
+    message (STATUS "Building app from sources within tree" )
+
     # Specify -DBUILD_EXAMPLE=example_name to build an example
     if (NOT BUILD_EXAMPLE)
         set (BUILD_EXAMPLE 1-hello_world)
     endif()
 
-    set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/${BUILD_EXAMPLE}")
-endif()
+    if (EXISTS "${CMAKE_SOURCE_DIR}/MyApp/main.cpp")
+        set (APP_DIR "${CMAKE_SOURCE_DIR}/MyApp")
+    else()
+        set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/${BUILD_EXAMPLE}")
+    endif()
 
-# Another option is to include Nucleus as a submodule in your own project.
-# ------------------------------------------------------------------------------------
-if (EXISTS "${APP_DIR}/main.cpp")
-    message(STATUS "Using ${APP_DIR}/main.cpp for compilation. Be sure to delete your pmem file too.")
-    # https://github.com/axomem/nucleus-alpha/issues/19 - layout issue
-else()
-    message(FATAL_ERROR "Unable to file ${APP_DIR}/main.cpp needed for compiling the example or your app.")
+    if (EXISTS "${APP_DIR}/main.cpp")
+        message(STATUS "Using ${APP_DIR}/main.cpp for compilation.")
+    else()
+        message(FATAL_ERROR "Unable to file ${APP_DIR}/main.cpp needed for compiling the example")
+    endif()
+
+    file(GLOB APP_SOURCES ${APP_DIR}/*.cpp)
+    set(APP_INCLUDE_DIRS  ${APP_DIR})
+
+    # Set App Name. This is used as the target
+    get_filename_component(APP_NAME ${APP_DIR} NAME)
+    message(STATUS "App Name defaulted to ${APP_NAME} from last directory in APP_DIR")
+
 endif()
 
 if (NOT APP_NAME)
-    get_filename_component(APP_NAME ${APP_DIR} NAME)
-    message(STATUS "App Name defaulted to ${APP_NAME} from last directory in APP_DIR")
-else()
-    message(STATUS "App Name is set to ${APP_NAME}")
+    set(APP_NAME nucleus)
+    message(STATUS "App Name is defaulted to ${APP_NAME}")
 endif()
-
 
 # === Set compiler definitions =========================================================================================
-
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
-endif()
 
 set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -69,6 +97,36 @@ else()
     endif()
 endif()
 
+option(COVERAGE "Install coverage options" OFF)
+
+if (COVERAGE)
+    # https://github.com/axomem/thingbase/issues/38 - can we simplify?
+    message(STATUS "Setting up Coverage. Forcing build type to DEBUG")
+    set(CMAKE_BUILD_TYPE "DEBUG")
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        add_definitions("-O0" )  #-O0 no optimisations
+        add_compile_options(--coverage)
+        link_libraries(gcov) # in case of linker errors. Didnt happen with definitions eg -fprofile-arcs -ftest-coverage
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        # See above - cannot use this compiler yet due to PSTL support
+        # https://github.com/axomem/thingbase/issues/37
+        # check missing optimisation =0
+        add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+        add_link_options(-fprofile-instr-generate)
+        link_libraries(clang_rt.profile-x86_64) # in case of linker errors
+    endif ()
+endif()
+
+# Setting default build type
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "Setting CMAKE_BUILD_TYPE to DEBUG")
+    set(CMAKE_BUILD_TYPE "Debug")
+endif (NOT CMAKE_BUILD_TYPE)
+
+if(CMAKE_BUILD_TYPE EQUAL DEBUG)
+    add_definitions("-g" )  #-g add GDB Native extras
+endif()
 
 # === Set dependencies =================================================================================================
 
@@ -85,33 +143,33 @@ else()
     find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
     message(STATUS "libpmemobj++ found without pkg-config (legacy)")
 endif()
-set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set vars for LIBPMEMOBJ++ yet.
-message (STATUS "LIBPMEMOBJ++ INCLUDE DIRS = ${LIBPMEMOBJ++_INCLUDE_DIRS}")
 
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(LIBPMEMOBJ REQUIRED libpmemobj>=${LIBPMEMOBJ_REQUIRED_VERSION})
-else()
-    find_package(LIBPMEMOBJ REQUIRED ${LIBPMEMOBJ_REQUIRED_VERSION})
-    message(STATUS "libpmemobj found without pkg-config (legacy)")
-endif()
-message (STATUS "LIBPMEMOBJ libaries in ${LIBPMEMOBJ_LIBRARIES} " )
+set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
+# https://github.com/pmem/libpmemobj-cpp/issues/788
+message (STATUS "LIBPMEMOBJ++_INCLUDE_DIRS = ${LIBPMEMOBJ++_INCLUDE_DIRS}")
+message (STATUS "LIBPMEMOBJ++_LIBRARIES = ${LIBPMEMOBJ++_LIBRARIES} ")
 
 
 # === Build src vars and include directories for target ================================================================
 
-file(GLOB SOURCES_APP ${APP_DIR}/*.cpp)
-set(APP_INCLUDE_DIRS ${APP_DIR})
-
-file(GLOB SOURCES_NUCLEUS ./src/*.cpp)
+file(GLOB NUCLEUS_SOURCES ./src/*.cpp)
 set (NUCLEUS_INCLUDE_DIRS ./src)
 
-file(GLOB SOURCES_NUCLEUS_EXT ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
+file(GLOB NUCLEUS_EXT_SOURCES  ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
 set (NUCLEUS_EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
 
-add_executable(${APP_NAME} ${SOURCES_APP} ${SOURCES_NUCLEUS} ${SOURCES_NUCLEUS_EXT} )
+add_executable(${APP_NAME} ${APP_SOURCES} 
+                           ${NUCLEUS_SOURCES} 
+                           ${NUCLEUS_EXT_SOURCES} )
 
-target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_DIRS} ${NUCLEUS_INCLUDE_DIRS} ${NUCLEUS_EXT_INCLUDE_DIRS} ${LIBPMEMOBJ++_INCLUDE_DIRS})
-target_link_libraries(${APP_NAME} ${APP_LIBRARIES} ${LIBPMEMOBJ++_LIBRARIES} ${PMDK_LIBPMEMOBJ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_DIRS} 
+                                              ${NUCLEUS_INCLUDE_DIRS} 
+                                              ${NUCLEUS_EXT_INCLUDE_DIRS} 
+                                              ${LIBPMEMOBJ++_INCLUDE_DIRS})
+
+target_link_libraries(${APP_NAME} ${APP_LIBRARIES} 
+                                  ${LIBPMEMOBJ++_LIBRARIES} 
+                                  ${CMAKE_THREAD_LIBS_INIT} )
 
 # Copy the target to the bin directory post build for easier use
 add_custom_command(TARGET ${APP_NAME} POST_BUILD
@@ -131,8 +189,8 @@ ADD_SUBDIRECTORY(test)
 # === Install target ===================================================================================================
 
 install(TARGETS ${APP_NAME} DESTINATION /usr/local/bin COMPONENT binaries)
-install(FILES nucleus.conf DESTINATION /etc/nucleus/${APP_NAME}.conf COMPONENT config)
-install(FILES util/nucleus.service DESTINATION /usr/lib/systemd/system/${APP_NAME}.service COMPONENT daemon)
+install(FILES nucleus.conf DESTINATION /etc/${APP_NAME} RENAME ${APP_NAME}.conf COMPONENT config)
+install(FILES util/nucleus.service DESTINATION /usr/lib/systemd/system RENAME ${APP_NAME}.service COMPONENT daemon)
 install(CODE "MESSAGE(\"\n*** Ensure to edit /etc/${APP_NAME}/${APP_NAME}.conf and add relevant configuration settings.\")")
 install(CODE "MESSAGE(\"*** Then run systemctl daemon-reload, systemctl start ${APP_NAME}, systemctl status ${APP_NAME} and systemctl enable ${APP_NAME}\")")
 
