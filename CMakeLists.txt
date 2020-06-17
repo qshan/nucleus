@@ -149,6 +149,12 @@ set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPME
 message (STATUS "LIBPMEMOBJ++_INCLUDE_DIRS = ${LIBPMEMOBJ++_INCLUDE_DIRS}")
 message (STATUS "LIBPMEMOBJ++_LIBRARIES = ${LIBPMEMOBJ++_LIBRARIES} ")
 
+# === Set up  ==========================================================================================================
+
+ENABLE_TESTING()
+list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Requires CMAKE 3.17
+# list(APPEND CMAKE_CTEST_ARGUMENTS "--verbose")  # Requires CMAKE 3.17
+ADD_SUBDIRECTORY(test)
 
 # === Build src vars and include directories for target ================================================================
 
@@ -178,12 +184,9 @@ add_custom_command(TARGET ${APP_NAME} POST_BUILD
 )
 
 
-# === Testing ==========================================================================================================
-
-ENABLE_TESTING()
-list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Requires CMAKE 3.17
-# list(APPEND CMAKE_CTEST_ARGUMENTS "--verbose")  # Requires CMAKE 3.17
-ADD_SUBDIRECTORY(test)
+if (EXISTS "${APP_DIR}/test/CMakeLists.txt")
+    ADD_SUBDIRECTORY(${APP_DIR}/test)
+endif()
 
 
 # === Install target ===================================================================================================
