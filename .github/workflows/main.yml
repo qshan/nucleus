@@ -38,8 +38,8 @@ jobs:
       with:
         submodules: recursive
 
-    - name: install-package-deps
-      run: sudo apt-get install libtbb-dev libldap2-dev libhwloc-dev
+    #- name: install-package-deps
+    #  run: sudo apt-get install libtbb-dev libldap2-dev libhwloc-dev
 
     - name: install-pmdk-deps
       run: sudo apt-get install libpmemobj-cpp-dev

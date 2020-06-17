@@ -1,11 +1,15 @@
 # **Nucleus: For Persistent Memory Native Applications**
 
+![Build and Test Nucleus](https://github.com/axomem/nucleus/workflows/Build%20and%20Test%20Nucleus/badge.svg)
+
 **Nucleus** helps accelerate building applications that run natively on 
-persistent memory (pmem). _Persistent Applications_ have the following characteristics:
+persistent memory (pmem) such as Intel&reg; Optane&trade; DC Persistent Memory. 
+
+_Persistent Applications_ have the following characteristics:
 
 * Application data and state is held in persistent memory. 
 * Data and state survive application restarts, server restarts, power failures etc.
-* No serialisation of data to an external data store is required to ensure persistence. 
+* No serialisation of data to disk or other storage medium is needed for persistence. 
 
 Persistent Application development is still relatively new and there is much to be learned.
 The rewards we are targeting include:
@@ -55,7 +59,7 @@ of [this page](https://github.com/pmem/libpmemobj-cpp). Make sure to set your co
 
 On Linux this builds Nucleus our "hello world" example app in the ``examples/1-hello_world`` directory:
 
-```bash
+```shell script
 mkdir build
 cd build
 cmake ..
@@ -71,7 +75,7 @@ The binary executable will be written to `./bin/nucleus`.
 Run `./nucleus.sh` after confirming Nucleus binary file is in `./bin`. This uses the ```nucleus.conf``` file in the base directory.
 
 All entries in the conf file can also be specified on the command line, eg:
-```bash
+```shell script
 ./bin/nucleus --config_file=nucleus.conf --log_level=trace
 ```
 
@@ -118,7 +122,7 @@ memory, you can restart the server and check the value again too!
 
 ### Start your own app!
 
-Start by reviewing the code in the app directory. You'll see three files:
+Start by reviewing the code in the examples directory. You'll see three files:
 
 #### MyApp.hpp
 This defines the base class that Nucleus manages on Persistent Memory. The data objects in here will survive application restarts!
@@ -156,18 +160,22 @@ server. Here is the [RESTinio documentation](https://stiffstream.com/en/docs.htm
 This is the starting point for the app. Main() hands control to Nucleus and it does all the rest.
 
 ### Other examples 
-We've started putting more examples into the /examples dir. To build these you can edit the 
-"CMakeLists.txt" to point to the example you want. Then delete the build directory and rerun cmake. 
+We've started putting more examples into the /examples dir. To build these you can run 
+cmake again as follows:
+```shell script
+cd build
+cmake -DBUILD_EXAMPLE=2-subclass
+make
+```
 
 ### Your own app
 You can use this the "Hello World" template as a starting point for your own Persistent Memory native applications! :rocket:
 
 1. Create a directory for your new app. Two options are:
-  - Create a directory within the source tree called ``./myapp`` - any files here will be .gitignored and you can even put your own git repository here
-  - Create a directory outside the source tree 
-2. Update the CMakeLists.txt file in Nucleus to point to the new directory (near the top)
-3. Copy one of the examples into your new directory
-4. Delete the build directory in Nucleus and rerun the cmake process 
+    - Create a directory within the source tree called ``./myapp`` - any files here will be .gitignored and you can even put your own git repository here
+    - Create a directory outside the source tree and include nucleus as a subdirectory. See CMakeLists.txt for more information 
+2. Copy one of the examples into your new directory
+3. Delete the build directory and rerun the cmake process 
 
 ## Real and Emulated Persistent Memory support
 
