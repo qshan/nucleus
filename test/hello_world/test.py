@@ -1,12 +1,13 @@
 # TODO - Add more strings including utf-8 etc
 # TODO - add deliberate error
-
+from test_case_helpers import ctest, test_case_start, test_case_end, test_case_utils
 import requests
 import json
 
-print("Testing basic request")
+test_case_start()
 
-server = "http://127.0.0.1:20000"
+server = test_case_utils.get_server_url()
+
 api_url = f"{server}/api/v1/app/message"
 response = requests.get(api_url)
 
@@ -33,4 +34,4 @@ print(json.dumps(response.json(), indent=4))
 
 assert response.json()["data"]["value"] == "Hello Back"
 
-exit(0)
+test_case_end()

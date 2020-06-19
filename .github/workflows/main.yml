@@ -19,10 +19,11 @@ name: Build and Test Nucleus
 # events but only for the master branch
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master, dev, integrate/thingbase ]
 
-#  pull_request:   # *** warning *** - be careful if using runners on own infra on public repos with public pull requests
-#    branches: [ master, dev ]
+  # *** warning *** - be careful if using runners on own infra on public repos with public pull requests
+  pull_request:
+    branches: [ master, dev, integrate/thingbase ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:

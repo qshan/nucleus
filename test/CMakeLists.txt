@@ -18,27 +18,34 @@
 # https://crascit.com/2016/10/18/test-fixtures-with-cmake-ctest/
 # https://cmake.org/cmake/help/v3.7/prop_test/FIXTURES_REQUIRED.html#prop_test:FIXTURES_REQUIRED
 
+message(STATUS "Executing Nucleus tests/CMakeLists.txt")
 
 include(test_framework_helpers.cmake)
 
-add_test_case(invalid_arguments)
-add_test_case(start_stop)
-add_test_case(fixture_start_server)
-add_test_case(fixture_stop_server)
-add_test_case(fixture_coverage_finalise)
+function (add_common_tests)
 
-set_tests_properties(start_stop                PROPERTIES FIXTURES_SETUP pre_api_server)
-set_tests_properties(invalid_arguments         PROPERTIES FIXTURES_SETUP pre_api_server)
-set_tests_properties(fixture_start_server      PROPERTIES FIXTURES_SETUP api_server)
-set_tests_properties(fixture_start_server      PROPERTIES FIXTURES_REQUIRED pre_api_server)
-set_tests_properties(fixture_stop_server       PROPERTIES FIXTURES_CLEANUP api_server)
-set_tests_properties(fixture_stop_server       PROPERTIES FIXTURES_REQUIRED pre_api_server)
-set_tests_properties(fixture_coverage_finalise PROPERTIES DEPENDS fixture_stop_server)  # final steps
+    message(STATUS "Adding common tests for ${APP_NAME}")
 
-add_test_case(api_ready)
-set_tests_properties(api_ready               PROPERTIES FIXTURES_SETUP api_ready)
-set_tests_properties(api_ready               PROPERTIES FIXTURES_REQUIRED api_server)
+    add_test_case(invalid_arguments)
+    add_test_case(start_stop)
+    add_test_case(fixture_start_server)
+    add_test_case(fixture_stop_server)
+    add_test_case(fixture_coverage_finalise)
+    add_test_case(api_ready)
 
-add_test_case_python(api_basic_nucleus)
-set_tests_properties(api_basic_nucleus       PROPERTIES FIXTURES_REQUIRED "api_server;api_ready")
+    add_test_case_property(start_stop                PROPERTIES FIXTURES_SETUP pre_api_server)
+    add_test_case_property(invalid_arguments         PROPERTIES FIXTURES_SETUP pre_api_server)
+    add_test_case_property(fixture_start_server      PROPERTIES FIXTURES_SETUP api_server)
+    add_test_case_property(api_ready                 PROPERTIES FIXTURES_SETUP api_server)
+    add_test_case_property(api_ready                 PROPERTIES DEPENDS fixture_start_server)
 
+    add_test_case_property(fixture_start_server      PROPERTIES FIXTURES_REQUIRED pre_api_server)
+    add_test_case_property(fixture_stop_server       PROPERTIES FIXTURES_CLEANUP api_server)
+    add_test_case_property(fixture_stop_server       PROPERTIES FIXTURES_REQUIRED pre_api_server)
+    add_test_case_property(fixture_coverage_finalise PROPERTIES DEPENDS fixture_stop_server)  # final steps
+
+
+    add_test_case_python(api_basic_nucleus)
+    add_test_case_property(api_basic_nucleus       PROPERTIES FIXTURES_REQUIRED api_server)
+
+endfunction()

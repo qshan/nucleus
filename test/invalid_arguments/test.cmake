@@ -1,5 +1,6 @@
 
-include(${TEST_ROOT_DIR}/test_case_helpers.cmake)
+message(STATUS "TEst case helper ${TEST_CASE_HELPERS}")
+include(${TEST_CASE_HELPERS})
 
 test_case_start()
 

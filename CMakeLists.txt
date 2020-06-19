@@ -15,68 +15,10 @@
 
 cmake_minimum_required(VERSION 3.3)
 project(nucleus)
+set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 
-# === Choose which app to build ========================================================================================
-
-# If building your own app within tree, place it in ./MyApp. This will work for simple tests but for more complex
-# projects its better to make Nucleus a subdirectory of your project and include it as git submodule (for example)
-
-# To use nucleus in a subdirectory of your project, add your own CMakeLists.txt at the top level and include:
-# set(APP_NAME your_app_name)
-# set(APP_SOURCES ...)   # list of files
-# set(APP_INCLUDE_DIRS ...)  # list of include dirs
-# set(APP_LIBRARIES ...) # list of additional libs (optional)
-# ADD_SUBDIRECTORY(nucleus)
-
-if (APP_NAME)
-
-    message (STATUS "Found preset APP_NAME ${APP_NAME}" )
-
-    if (NOT APP_SOURCES)
-        message (FATAL_ERROR "No APP_SOURCES found")
-    endif()
-    # message (STATUS "APP_SOURCES: ${APP_SOURCES}")
-
-    if (NOT APP_INCLUDE_DIRS)
-        message (FATAL_ERROR "No APP_INCLUDE_DIRS found")
-    endif()
-    # message (STATUS "APP_INCLUDE_DIRS: ${APP_INCLUDE_DIRS}")
-
-    # message (STATUS "APP_LIBRARIES: ${APP_LIBRARIES}")
-
-else()
-
-    message (STATUS "Building app from sources within tree" )
-
-    # Specify -DBUILD_EXAMPLE=example_name to build an example
-    if (NOT BUILD_EXAMPLE)
-        set (BUILD_EXAMPLE 1-hello_world)
-    endif()
-
-    if (EXISTS "${CMAKE_SOURCE_DIR}/myapp/main.cpp")
-        set (APP_DIR "${CMAKE_SOURCE_DIR}/myapp")
-    else()
-        set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/${BUILD_EXAMPLE}")
-    endif()
-
-    if (EXISTS "${APP_DIR}/main.cpp")
-        message(STATUS "Using ${APP_DIR}/main.cpp for compilation.")
-    else()
-        message(FATAL_ERROR "Unable to file ${APP_DIR}/main.cpp needed for compiling the example")
-    endif()
-
-    file(GLOB APP_SOURCES ${APP_DIR}/*.cpp)
-    set(APP_INCLUDE_DIRS  ${APP_DIR})
-
-    # Set App Name. This is used as the target
-    get_filename_component(APP_NAME ${APP_DIR} NAME)
-    message(STATUS "App Name defaulted to ${APP_NAME} from last directory in APP_DIR")
-
-endif()
-
-if (NOT APP_NAME)
-    set(APP_NAME nucleus)
-    message(STATUS "App Name is defaulted to ${APP_NAME}")
+if (NOT VERSION) # already set from higher-level project
+    set(VERSION 0.3.beta)
 endif()
 
 # === Set compiler definitions =========================================================================================
@@ -149,12 +91,34 @@ set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPME
 message (STATUS "LIBPMEMOBJ++_INCLUDE_DIRS = ${LIBPMEMOBJ++_INCLUDE_DIRS}")
 message (STATUS "LIBPMEMOBJ++_LIBRARIES = ${LIBPMEMOBJ++_LIBRARIES} ")
 
-# === Set up  ==========================================================================================================
+# Python used for testing
+# FIX - add option to disable testing - https://github.com/axomem/nucleus/issues/46
+find_package (Python3 COMPONENTS Interpreter)
+if(${Python3_FOUND})
+    message(STATUS "Found Python3 Interpreter at ${Python3_EXECUTABLE}")
+else()
+    message(FATAL_ERROR "Python3 Interpreter not found")
+endif()
+
+# === Set up testing ===================================================================================================
 
 ENABLE_TESTING()
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Requires CMAKE 3.17
 # list(APPEND CMAKE_CTEST_ARGUMENTS "--verbose")  # Requires CMAKE 3.17
 ADD_SUBDIRECTORY(test)
+
+if(${TEST_SERVER_PORT})  # Keep track of server port if its already defined
+    set(TEST_SERVER_PORT_DEFINED)
+endif()
+
+nucleus_init(${PROJECT_SOURCE_DIR})
+
+if (NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})  # if not nucleus building...
+    if(NOT TEST_SERVER_PORT_DEFINED)
+    # Push port up to top level
+        set(TEST_SERVER_PORT ${TEST_SERVER_PORT} PARENT_SCOPE)
+    endif()
+endif()
 
 # === Build src vars and include directories for target ================================================================
 
@@ -164,54 +128,147 @@ set (NUCLEUS_INCLUDE_DIRS ./src)
 file(GLOB NUCLEUS_EXT_SOURCES  ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
 set (NUCLEUS_EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
 
-add_executable(${APP_NAME} ${APP_SOURCES} 
-                           ${NUCLEUS_SOURCES} 
-                           ${NUCLEUS_EXT_SOURCES} )
 
-target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_DIRS} 
-                                              ${NUCLEUS_INCLUDE_DIRS} 
-                                              ${NUCLEUS_EXT_INCLUDE_DIRS} 
-                                              ${LIBPMEMOBJ++_INCLUDE_DIRS})
+function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
 
-target_link_libraries(${APP_NAME} ${APP_LIBRARIES} 
-                                  ${LIBPMEMOBJ++_LIBRARIES} 
-                                  ${CMAKE_THREAD_LIBS_INIT} )
+    message(STATUS "Adding target ${APP_NAME} ================================")
+    # message(STATUS "${APP_NAME}" "\n" "${APP_DIR}" "\n" "${APP_SOURCES}" "\n" "${APP_INCLUDE_DIRS}" "\n" "${APP_LIBRARIES}")
 
-# Copy the target to the bin directory post build for easier use
-add_custom_command(TARGET ${APP_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
-)
+    add_executable(${APP_NAME} ${APP_SOURCES}
+                               ${NUCLEUS_SOURCES}
+                               ${NUCLEUS_EXT_SOURCES}
+                               nucleus.conf
+                               util/nucleus.service)  # last two included due to RPM Packaging. Renamed on install
 
+    target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_DIRS}
+                                                  ${NUCLEUS_INCLUDE_DIRS}
+                                                  ${NUCLEUS_EXT_INCLUDE_DIRS}
+                                                  ${LIBPMEMOBJ++_INCLUDE_DIRS})
 
-if (EXISTS "${APP_DIR}/test/CMakeLists.txt")
-    ADD_SUBDIRECTORY(${APP_DIR}/test)
+    target_link_libraries(${APP_NAME} ${APP_LIBRARIES}
+                                      ${LIBPMEMOBJ++_LIBRARIES}
+                                      ${CMAKE_THREAD_LIBS_INIT} )
+
+    # Copy the target to the bin directory post build for easier use
+    add_custom_command(TARGET ${APP_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
+    )
+
+    add_common_tests()
+
+    # Add the additional app tests, if exist
+
+    if (EXISTS "${APP_DIR}/test/CMakeLists.txt")
+        if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+            #set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+            ADD_SUBDIRECTORY(${APP_DIR}/test)
+        else()
+            #set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/nucleus)
+            message(STATUS "Out of tree build detected. "
+                           "Make sure to include your tests in your top-level test folder.")
+        endif()
+    endif()
+
+    # Get next server port
+    getnextport(TEST_SERVER_PORT ${TEST_SERVER_PORT})
+    set(TEST_SERVER_PORT ${TEST_SERVER_PORT} PARENT_SCOPE)
+
+    message(STATUS "Target configuration done")
+
+endfunction()
+
+# === Choose which app to build ========================================================================================
+
+# If building your own app within tree, place it in ./MyApp. This will work for simple tests but for more complex
+# projects its better to make Nucleus a subdirectory of your project and include it as git submodule (for example)
+
+# To use nucleus in a subdirectory of your project, add your own CMakeLists.txt at the top level and include:
+# set(APP_NAME your_app_name)
+# set(APP_SOURCES ...)                         # list of files
+# set(APP_INCLUDE_DIRS ...)                    # list of include dirs
+# set(APP_LIBRARIES ...)                       # list of additional libs (optional)
+# ADD_SUBDIRECTORY(nucleus)                    # or other location
+# nucleus_init(${PROJECT_SOURCE_DIR}/nucleus)  # or other location
+
+if (APP_NAME)
+
+    message (STATUS "Found preset APP_NAME ${APP_NAME} from higher-level inclusion" )
+
+    if (NOT APP_DIR)
+        message (FATAL_ERROR "No APP_DIR found - this should point to your root directory")
+    endif()
+
+    if (NOT APP_SOURCES)
+        message (FATAL_ERROR "No APP_SOURCES found")
+    endif()
+    # message (STATUS "APP_SOURCES: ${APP_SOURCES}")
+
+    if (NOT APP_INCLUDE_DIRS)
+        message (FATAL_ERROR "No APP_INCLUDE_DIRS found")
+    endif()
+    # message (STATUS "APP_INCLUDE_DIRS: ${APP_INCLUDE_DIRS}")
+
+    # message (STATUS "APP_LIBRARIES: ${APP_LIBRARIES}")
+
+    add_target("${APP_NAME}" "${APP_DIR}" "${APP_SOURCES}" "${APP_INCLUDE_DIRS}" "${APP_LIBRARIES}")
+
+    include(cmake/install.cmake)
+    include(cmake/package.cmake)
+
+elseif(EXISTS "${CMAKE_SOURCE_DIR}/myapp/main.cpp")
+
+    message (STATUS "Building MyApp from within tree" )
+
+    set (APP_NAME myapp)
+
+    set (APP_DIR "${CMAKE_SOURCE_DIR}/myapp")
+
+    if (EXISTS "${APP_DIR}/main.cpp")
+        message(STATUS "Using ${APP_DIR}/main.cpp for compilation.")
+    else()
+        message(FATAL_ERROR "Unable to file ${APP_DIR}/main.cpp needed for compiling your code")
+    endif()
+
+    file(GLOB APP_SOURCES ${APP_DIR}/*.cpp)
+    set(APP_INCLUDE_DIRS  ${APP_DIR})
+
+    add_target("${APP_NAME}" "${APP_DIR}" "${APP_SOURCES}" "${APP_INCLUDE_DIRS}" "${APP_LIBRARIES}")
+
+    include(cmake/install.cmake)
+    include(cmake/package.cmake)
+
+else()
+
+    set(BUILD_EXAMPLES ON)
+
 endif()
 
+if (BUILD_EXAMPLES)
 
-# === Install target ===================================================================================================
+    getsubdirlist(EXAMPLE_DIRS ${CMAKE_SOURCE_DIR}/examples)
 
-install(TARGETS ${APP_NAME} DESTINATION /usr/local/bin COMPONENT binaries)
-install(FILES nucleus.conf DESTINATION /etc/${APP_NAME} RENAME ${APP_NAME}.conf COMPONENT config)
-install(FILES util/nucleus.service DESTINATION /usr/lib/systemd/system RENAME ${APP_NAME}.service COMPONENT daemon)
-install(CODE "MESSAGE(\"\n*** Ensure to edit /etc/${APP_NAME}/${APP_NAME}.conf and add relevant configuration settings.\")")
-install(CODE "MESSAGE(\"*** Then run systemctl daemon-reload, systemctl start ${APP_NAME}, systemctl status ${APP_NAME} and systemctl enable ${APP_NAME}\")")
+    foreach(subdir ${EXAMPLE_DIRS})
 
+        set (APP_NAME ${subdir})
 
-# === RPM Packaging ====================================================================================================
+        set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/${subdir}")
 
-set(CPACK_PACKAGE_VERSION ${VERSION})
-set(CPACK_GENERATOR "RPM")
-set(CPACK_PACKAGE_NAME ${APP_NAME})
-set(CPACK_PACKAGE_RELEASE 1)
-# set(CPACK_PACKAGE_CONTACT "Name")
-# set(CPACK_PACKAGE_VENDOR "Company")
-set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}.${CMAKE_SYSTEM_PROCESSOR}")
-set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION /usr /usr/local /usr/local/bin /etc /etc/${APPNAME} /usr/lib /usr/lib/systemd /usr/lib/systemd/system)
+        file(GLOB APP_SOURCES ${APP_DIR}/*.cpp)
+        set(APP_INCLUDE_DIRS  ${APP_DIR})
 
-#configure_file("${CMAKE_CURRENT_SOURCE_DIR}/setup/thingbase.rpm.spec" "${CMAKE_CURRENT_BINARY_DIR}/thingbase.rpm.spec" @ONLY IMMEDIATE)
-#set(CPACK_RPM_USER_BINARY_SPECFILE "${CMAKE_CURRENT_BINARY_DIR}/thingbase.rpm.spec")
+        add_target("${APP_NAME}" "${APP_DIR}" "${APP_SOURCES}" "${APP_INCLUDE_DIRS}" "${APP_LIBRARIES}")
 
-include(CPack)
+    endforeach()
+
+    # Set up install and package only for the last built app - mainly for testing
+    if (NOT NUCLEUS_INSTALL_INCLUDED)
+        include(cmake/install.cmake)
+    endif()
+
+    if (NOT NUCLEUS_PACKAGE_INCLUDED)
+        include(cmake/package.cmake)
+    endif()
+
+endif()
 

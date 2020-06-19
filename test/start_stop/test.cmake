@@ -1,5 +1,5 @@
 
-include(${TEST_ROOT_DIR}/test_case_helpers.cmake)
+include(${TEST_CASE_HELPERS})
 
 test_case_start()
 
@@ -14,9 +14,8 @@ execute_process(
                 --log_level=trace
                 --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
                 --pool_main_size=10
-                --rest_address=127.0.0.1 --rest_port=20000
+                --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
                 --condition_path=/tmp/thisfileshouldnotexist
-                # --pid_file=${TEST_OUT_DIR}/nucleus.pid --daemon      # for daemon
     COMMAND_ECHO STDOUT
     TIMEOUT 60
     RESULTS_VARIABLE TEST_CASE_RESULT
@@ -31,9 +30,8 @@ execute_process(
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
         --pool_main_size=10
-        --rest_address=127.0.0.1 --rest_port=20000
+        --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
         --condition_path=/tmp/thisfileshouldnotexist
-        # --pid_file=${TEST_OUT_DIR}/nucleus.pid --daemon      # for daemon
         COMMAND_ECHO STDOUT
         TIMEOUT 60
         RESULTS_VARIABLE TEST_CASE_RESULT

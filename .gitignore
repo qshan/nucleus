@@ -27,6 +27,9 @@
 *.out
 *.app
 
+# Python
+__pycache__/
+
 # IDE
 .idea
 

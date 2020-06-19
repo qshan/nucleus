@@ -1,12 +1,15 @@
+from test_case_helpers import ctest, test_case_start, test_case_end, test_case_utils
 import requests
 import json
 
-server = "http://127.0.0.1:20000"
+test_case_start()
+
+server = test_case_utils.get_server_url()
 
 response = requests.get(f"{server}/api/v1/ready")
 
-assert response.status_code == 200, f"Status code should be 200, got {response.status_code}"
+assert response.status_code == 200, f"Got {response.status_code}"
 
-assert "data" in response.json(), "Can't find data object in response:\r\n" + json.dumps(response.json(), indent=4)
+assert "data" in response.json(), f"Got {json.dumps(response.json())}"
 
-exit(0)
+test_case_end()

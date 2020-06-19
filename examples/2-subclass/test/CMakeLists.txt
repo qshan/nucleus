@@ -1,0 +1,3 @@
+
+add_test_case_python(subclass)
+add_test_case_property(subclass PROPERTIES FIXTURES_REQUIRED api_server)
