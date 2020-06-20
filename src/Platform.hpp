@@ -40,6 +40,7 @@
 #include <libpmemobj++/p.hpp>
 #include <libpmemobj++/make_persistent.hpp>
 #include <libpmemobj++/make_persistent_array.hpp>
+#include <utility>
 #include <libpmemobj++/container/vector.hpp>
 #include <libpmemobj++/container/concurrent_hash_map.hpp>
 #include <libpmemobj++/container/string.hpp>
@@ -49,5 +50,24 @@
 #include "Logging.hpp"
 #include "Config.hpp"
 #include "Utilities.hpp"
+
+namespace nucleus {
+
+class app_error : public std::exception {
+
+public:
+    app_error() : app_error("nucleus::app_error") {};
+    explicit app_error(std::string  message) : message(std::move(message)) {};
+    const char *what() const noexcept override {
+        return message.c_str();
+    };
+
+private:
+
+    std::string message;
+
+};
+
+}
 
 #endif //NUCLEUS_PLATFORM_HPP

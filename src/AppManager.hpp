@@ -16,6 +16,8 @@
 #ifndef NUCLEUS_APPMANAGER_HPP
 #define NUCLEUS_APPMANAGER_HPP
 
+// Improve - Implement a state machine to enforce state changes - https://github.com/axomem/nucleus/issues/48
+
 #include <filesystem>
 #include "PoolManager.hpp"
 #include "RestServer.hpp"
@@ -43,10 +45,7 @@ namespace nucleus {
 
     public:
 
-        AppManager():
-                pool_manager{PoolManager<AppPool<A>>(config::pool_main_file,
-                                                     fmt::format("{}__v{}", typeid(A).name(), A::layout_version))}
-        {
+        AppManager() {
             Logging::log()->trace("Constructing AppManager");
             auto app_pool = pool_manager.pool();
             if (app_pool.root()->app == nullptr) {
@@ -63,6 +62,12 @@ namespace nucleus {
             Logging::log()->trace("AppManager is exiting");
         };
 
+        AppManager(const AppManager&)                = delete; // Copy
+        AppManager(AppManager&&)                     = delete; // Move
+        AppManager& operator= ( const AppManager & ) = delete; // Copy Assign
+        AppManager& operator= ( AppManager && )      = delete; // Move assign
+
+
         void Run() {
             Logging::log()->debug("AppManager is opening Application");
             Logging::log()->debug("Current App State is {} ", GetAppStateName());
@@ -70,17 +75,19 @@ namespace nucleus {
             auto app = pool_manager.pool().root()->app;
 
             if (GetAppState() == nucleus::INITIALIZING) {
-                throw std::runtime_error("AppManager: App failed initialization last time. Delete pool and try again");
+                throw nucleus::app_error("AppManager: App failed initialization last time. "
+                                                 "Delete pool and try again");
             }
 
             if (GetAppState() == nucleus::NEW) {
-                Logging::log()->info("AppManager: App initializing after first persistence");
+                Logging::log()->warn("AppManager: App initializing after first persistence");
                 SetAppState(nucleus::INITIALIZING);
                 app->Initialize();
             }
 
             if (GetAppState() != nucleus::INITIALIZING && GetAppState() != nucleus::STOPPED ) {
-                Logging::log()->warn("AppManager: Abnormal App State detected. Attempting to restart however application state may be compromised");
+                Logging::log()->warn("AppManager: Abnormal App State detected. Attempting to restart "
+                                          "however application state may be compromised");
             }
 
             SetAppState(nucleus::STARTING);
@@ -94,12 +101,12 @@ namespace nucleus {
             SetAppState(nucleus::RUNNING);
             Logging::log()->debug("AppManager Entering Main thread run loop with App State {}", GetAppStateName());
 
-            std::cout << std::endl;
-            std::cout << "***" << std::endl;
-            std::cout << "Nucleus is running. Default site is http://" <<config::rest_address << ":" << config::rest_port << "/api/v1/ready" <<std::endl;
-            std::cout << "Press CTRL-C once to shutdown normally. May require up to 3 presses in abnormal termination" << std::endl;
-            std::cout << "***" << std::endl;
-            std::cout << std::endl;
+            Logging::log()->info("***");
+            Logging::log()->info("Server is running. Default site is "
+                                 "http://{}:{}/api/v1/ready", config::rest_address, config::rest_port);
+            Logging::log()->info("Press CTRL-C once to shutdown normally. May require up to 3 presses "
+                                 "in abnormal termination");
+            Logging::log()->info("***");
 
             while (GetAppState() == nucleus::RUNNING){
                 // *** This holds overall run state **************************
@@ -124,12 +131,15 @@ namespace nucleus {
         }
 
     private:
-        PoolManager<AppPool<A>> pool_manager;
+
+        PoolManager<AppPool<A>> pool_manager {config::pool_main_file, fmt::format("{}__v{}", typeid(A).name(),
+                                              A::layout_version)};
 
         void SetAppState(AppState state) {
-            // TODO - basic state machine here to prevent incorrect state transitions, and make threadsafe
+
             pmem::obj::transaction::run(pool_manager.pool(), [&] {
-                Logging::log()->trace("App State is being set to {} (previous state {})", GetAppStateName(state), GetAppStateName());
+                Logging::log()->trace("App State is being set to {} (previous state {})",
+                                      GetAppStateName(state), GetAppStateName());
                 pool_manager.pool().root()->app_state = state; });
         }
 
@@ -143,22 +153,21 @@ namespace nucleus {
             return AppStateNames[pool_manager.pool().root()->app_state];
         }
 
-        std::string GetAppStateName(AppState state)
+        std::string GetAppStateName(AppState state) const
         {
             return AppStateNames[state];
         }
 
         void Exit(const std::string &reason) {
-            Logging::log()->info("AppManager Exit requested. Current App State is {}. Reason {}", GetAppStateName(), reason);
+            Logging::log()->info("AppManager Exit requested. Current App State is {}. Reason {}",
+                                 GetAppStateName(), reason);
             SetAppState(nucleus::EXITING);
         };
 
         void CheckConditionPathExists() {
-            if (not config::condition_path.empty()) {
-                if (not std::filesystem::exists(config::condition_path)) {
+            if (!config::condition_path.empty() && !std::filesystem::exists(config::condition_path)) {
                     Exit(fmt::format("Condition path is specified but does not or no longer exists."
                                      " Path is {}", config::condition_path));
-                }
             }
         }
     };

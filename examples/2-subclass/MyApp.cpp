@@ -37,7 +37,7 @@ MyApp::~MyApp()
 void
 MyApp::Initialize()
 {
-    // child objects->Initialize any child objects here;
+    // Initialize any child objects here
     Logging::log()->trace("MyApp is initializing");
     p_customers->Initialize();
 }
@@ -54,7 +54,7 @@ MyApp::Start(){
 void
 MyApp::Stop()
 {
-    // if you create any volatile objects, delete them here;
+    // if you create any volatile objects, delete them here
     p_customers->Stop();
     Logging::log()->trace("MyApp is stopping");
 

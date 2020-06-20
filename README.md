@@ -1,6 +1,11 @@
 # **Nucleus: For Persistent Memory Native Applications**
 
 ![Build and Test Nucleus](https://github.com/axomem/nucleus/workflows/Build%20and%20Test%20Nucleus/badge.svg)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=bugs)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=coverage)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=alert_status)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
 
 **Nucleus** helps accelerate building applications that run natively on 
 persistent memory (pmem) such as Intel&reg; Optane&trade; DC Persistent Memory. 

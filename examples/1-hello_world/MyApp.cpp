@@ -22,8 +22,8 @@ using nlohmann::json;
 using namespace pmem::obj;
 
 MyApp::MyApp()
-    : p_message{make_persistent<pmem::obj::string>("Hello World")}
-    , p_update_count{0}
+    : p_message(make_persistent<pmem::obj::string>("Hello World"))
+    , p_update_count(0)
 {
     Logging::log()->debug("MyApp Persistent Constructor called");
 }
@@ -40,7 +40,7 @@ MyApp::~MyApp()
 void
 MyApp::Initialize()
 {
-    // child objects->Initialize any child objects here;
+    // Initialize any child objects here
     Logging::log()->trace("MyApp is initializing");
 
 }
@@ -98,7 +98,7 @@ MyApp::Start(){
 void
 MyApp::Stop()
 {
-    // if you create any volatile objects, delete them here;
+    // if you create any volatile objects, delete them here
     Logging::log()->trace("MyApp is stopping");
 
 }

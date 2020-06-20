@@ -26,6 +26,11 @@ public:
     MyApp();            // this at pool creation or app reset. It does not run on each application start
     ~MyApp();           // this happens when the class instance is being deleted from the pool. It is not called on app close.
 
+    MyApp(const MyApp&)                = delete; // Copy
+    MyApp(MyApp&&)                     = delete; // Move
+    MyApp& operator= ( const MyApp & ) = delete; // Copy Assign
+    MyApp& operator= ( MyApp && )      = delete; // Move assign
+
     void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
     void Start();       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!

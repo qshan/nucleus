@@ -52,7 +52,7 @@ Customers::~Customers()
 void
 Customers::Initialize()
 {
-    // child objects->Initialize any child objects here;
+    // Initialize any child objects here
     Logging::log()->trace("Customers is initializing");
 
     // Add sample customers
@@ -132,7 +132,7 @@ Customers::Start(){
 void
 Customers::Stop()
 {
-    // if you create any volatile objects, delete them here;
+    // if you create any volatile objects, delete them here
     Logging::log()->trace("Customers is stopping");
 
 }

@@ -60,6 +60,12 @@ public:
         Logging::log()->info("Closing persistent memory pool for file {}", file_name);
         my_pool.close();
     };
+
+    PoolManager(const PoolManager&)                = delete; // Copy
+    PoolManager(PoolManager&&)                     = delete; // Move
+    PoolManager& operator= ( const PoolManager & ) = delete; // Copy Assign
+    PoolManager& operator= ( PoolManager && )      = delete; // Move assign
+
     pmem::obj::pool<N> &pool() {
         return my_pool;
     };

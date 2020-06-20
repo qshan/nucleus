@@ -28,6 +28,10 @@ friend Customers;
 public:
     explicit Customer(const std::string& name_arg = "", const std::string& city_arg = "", int order_count_arg = 0);
     ~Customer();
+    // Customer(const Customer&)                = delete; // Copy is used by vector
+    // Customer(Customer&&)                     = delete; // Move is used by vector
+    // Customer& operator= ( const Customer & ) = delete; // Copy Assign kept otherwise copy implicitly deleted
+    // Customer& operator= ( Customer && )      = delete; // Move assign kept otherwise copy implicitly deleted
 
 private:
     pmem::obj::persistent_ptr<pmem::obj::string> p_name;
@@ -42,6 +46,11 @@ class Customers {
 public:
     Customers();            // this at pool creation or app reset. It does not run on each application start
     ~Customers();           // this happens when the class is being deleted from the pool. It is not called on app close.
+
+    Customers(const Customers&)                = delete; // Copy
+    Customers(Customers&&)                     = delete; // Move
+    Customers& operator= ( const Customers & ) = delete; // Copy Assign
+    Customers& operator= ( Customers && )      = delete; // Move assign
 
     // TODO - add functions here for managing customers. ReST interfaces should bind to these.
 
