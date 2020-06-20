@@ -26,18 +26,6 @@ RestServerRouter::RestServerRouter() {
 
     Logging::log()->trace("ReST Server configuring default routes");
 
-    router->http_get(
-            R"(/api/v1/ready)",
-            [](auto req, auto params) {
-                json j = "{}"_json;
-                j["data"] = "{}"_json;
-                j["response"]["message"] = "Ready command received successfully";
-                return req->create_response()
-                        .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-                        .set_body( j.dump())
-                        .done();
-            });
-
     router->non_matched_request_handler(
             [](auto req){
                 return req->create_response(status_not_found()).connection_close().done();
@@ -71,7 +59,7 @@ RestServerRouter::getRestServerRouter() {
 // TODO - also need to catch 'std::system_error' bind: Address already in use here. ideally abort Nucleus?
 
 RestServer::RestServer(std::unique_ptr<router::express_router_t<>> router,
-                       const std::string& address_arg, int port_arg,
+                       const std::string& address_arg, unsigned short port_arg,
                        size_t threads_arg) :
 
     // This creates the server object but does not start it

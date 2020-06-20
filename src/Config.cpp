@@ -19,6 +19,7 @@
 #include "Config.hpp"
 #include "Logging.hpp"
 
+// TODO - add further validation to provided values
 
 namespace nucleus::config
 {
@@ -29,7 +30,7 @@ namespace nucleus::config
     size_t pool_main_size;
     std::string pool_main_file;
 
-    int rest_port;
+    unsigned short rest_port;
     std::string rest_address;
     size_t rest_threads;
 
@@ -48,7 +49,7 @@ bool load_config(const std::string& executable_name_arg, int argc, char *argv[])
     config::rest_address = "localhost";
     config::rest_threads = 4;
 
-    // condition_path = "";
+    // condition_path is empty by default
 
     if (argc < 2) return false;
 
@@ -68,7 +69,7 @@ int handler(void* user, const char* section, const char* name, const char* value
 
     auto check_match = [section, name, &matched](const std::string& section_arg, const std::string& name_arg) {
         // This is a closure-style sub function used below to simplify parsing
-        auto found = (bool) ((section_arg == section) && (name_arg == name));
+        auto found = ((section_arg == section) && (name_arg == name));
         if (found) {
             matched = true;
         }
@@ -92,7 +93,13 @@ int handler(void* user, const char* section, const char* name, const char* value
         }
     }
 
-    if (check_match("","rest_port")) { config::rest_port = std::stoi(value);}
+    if (check_match("","rest_port")) {
+        auto temp_port = std::strtoul(value, nullptr,0);
+        if (temp_port > USHRT_MAX || temp_port > 65535 || temp_port == 0) {
+            throw std::invalid_argument("Given port is invalid. Should be 1 to 65535.");
+        }
+        config::rest_port = (unsigned short) temp_port;
+    }
     if (check_match("","rest_address")) { config::rest_address = value;}
     if (check_match("","rest_threads")) { config::rest_threads = std::stoi(value);}
 

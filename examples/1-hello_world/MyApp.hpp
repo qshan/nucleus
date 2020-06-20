@@ -29,7 +29,6 @@ public:
     MyApp& operator= ( const MyApp & ) = delete; // Copy Assign
     MyApp& operator= ( MyApp && )      = delete; // Move assign
 
-
     void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
     void Start();       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
@@ -38,8 +37,8 @@ public:
 
 private:
     // These are the persistent memory objects for this application.
-    pmem::obj::persistent_ptr<pmem::obj::string> p_message;
-    pmem::obj::p<int> p_update_count;
+    pmem::obj::persistent_ptr<pmem::obj::string> p_message {pmem::obj::make_persistent<pmem::obj::string>("Hello World")};
+    pmem::obj::p<int> p_update_count {0};
 
 };
 

@@ -13,8 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see http://www.gnu.org/licenses/
 
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.15)
 project(nucleus)
+
 set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 
 if (NOT VERSION) # already set from higher-level project

@@ -44,7 +44,7 @@ class RestServer {
 
 public:
     explicit RestServer( std::unique_ptr<restinio::router::express_router_t<>> router,
-                         const std::string& address = "localhost", int port = 80,
+                         const std::string& address = "localhost", unsigned short port = 80,
                          size_t threads = 4);
     ~RestServer();
     RestServer(const RestServer&) = delete;

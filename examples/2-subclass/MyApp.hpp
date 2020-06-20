@@ -39,7 +39,7 @@ public:
 
 private:
     // These are the persistent memory objects for this class.
-    pmem::obj::persistent_ptr<Customers> p_customers;
+    pmem::obj::persistent_ptr<Customers> p_customers {pmem::obj::make_persistent<Customers>()};
 
 };
 

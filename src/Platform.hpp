@@ -57,7 +57,7 @@ class app_error : public std::exception {
 
 public:
     app_error() : app_error("nucleus::app_error") {};
-    explicit app_error(std::string  message) : message(std::move(message)) {};
+    explicit app_error(std::string msg) : message(std::move(msg)) {};
     const char *what() const noexcept override {
         return message.c_str();
     };

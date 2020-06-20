@@ -37,7 +37,7 @@ namespace nucleus::config
     extern std::string pool_main_file;
 
     // For ReSTServer
-    extern int rest_port;
+    extern unsigned short rest_port;
     extern std::string rest_address;
     extern size_t rest_threads;
 

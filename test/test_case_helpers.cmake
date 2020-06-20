@@ -15,6 +15,7 @@
 
 # This is run each time for each test case
 
+message(STATUS "==================================================================================================")
 message(STATUS "Running Test case ${TEST_NAME} | TEST_EXE ${TEST_EXE} | "
                "TEST_CASE_DIR ${TEST_CASE_DIR} | TEST_OUT_DIR ${TEST_OUT_DIR}")
 
@@ -22,21 +23,33 @@ function(test_case_start)
     message(STATUS "Clearing TEST Directories for ${TEST_OUT_DIR}")
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TEST_OUT_DIR})
     execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory   ${TEST_OUT_DIR})
+    message(STATUS "--------------------------------------------------------------------------------------------------")
 endfunction()
 
 function(test_case_check)
-    message(STATUS "Checking Test case ${TEST_NAME} with result ${TEST_CASE_RESULT}")
+    set(args ${ARGN})
+    if (args)
+        set(sub_check_message "| sub-check: " "${args}" "|")
+    endif()
 
     foreach(RESULT_ITEM ${TEST_CASE_RESULT})
         if (NOT ${RESULT_ITEM} EQUAL 0)
-            message(FATAL_ERROR "TEST_CASE_RESULT was non-zero. Result was ${TEST_CASE_RESULT}")
+            message(FATAL_ERROR "TEST_CASE_RESULT for ${TEST_NAME} ${sub_check_message} was non-zero."
+                                " Result: ${TEST_CASE_RESULT}")
         endif()
     endforeach()
+
+    message(STATUS "---")
+    message(STATUS "PASS: Test ${TEST_NAME} ${sub_check_message} ")
+
+    set(TEST_CASE_RESULT 0 PARENT_SCOPE) # Reset it above
+    message(STATUS "--------------------------------------------------------------------------------------------------")
 
 endfunction()
 
 
 function(test_case_end)
+
     message(STATUS "Finishing Test case ${TEST_NAME} with result ${TEST_CASE_RESULT}")
 
     test_case_check()
@@ -77,7 +90,8 @@ function(clear_nucleus_condition_path)
     set(NUCLEUS_CONDITION_PATH /tmp/nucleus_condition_path_file__${TEST_SERVER_PORT})
 
     if(NOT EXISTS ${NUCLEUS_CONDITION_PATH})
-        message(FATAL_ERROR "Unable to clear condition path file as it is already cleared or doesn't exist - ${NUCLEUS_CONDITION_PATH}")
+        message(FATAL_ERROR "Unable to clear condition path file as it is already cleared or doesn't exist."
+                            "Path was ${NUCLEUS_CONDITION_PATH}")
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove ${NUCLEUS_CONDITION_PATH} RESULT_VARIABLE RESULT)
     if(EXISTS ${NUCLEUS_CONDITION_PATH})

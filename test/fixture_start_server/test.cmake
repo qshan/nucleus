@@ -17,10 +17,11 @@ execute_process(
                 --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
                 --condition_path=${NUCLEUS_CONDITION_PATH}
     COMMAND_ECHO STDOUT
+    OUTPUT_VARIABLE PROCESS_ID
     TIMEOUT 30
     RESULTS_VARIABLE TEST_CASE_RESULT
 )
-#set(TEST_CASE_RESULT 1)
-# set(NUCLEUS_CONDITION_PATH ${NUCLEUS_CONDITION_PATH} PARENT_SCOPE)
+
+message(STATUS "Process ID is ${PROCESS_ID}")
 
 test_case_end()

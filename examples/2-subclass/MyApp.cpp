@@ -20,7 +20,6 @@ using namespace nucleus;
 using namespace pmem::obj;
 
 MyApp::MyApp()
-    : p_customers{make_persistent<Customers>()}
 {
     Logging::log()->debug("MyApp Persistent Constructor called ");
 }
@@ -29,7 +28,7 @@ MyApp::~MyApp()
 {
     Logging::log()->debug("MyApp Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_customers);
-    pmem::obj::transaction::run(pop, [&] {
+    pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<Customers>(p_customers);
             });
 }

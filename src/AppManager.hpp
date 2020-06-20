@@ -29,17 +29,20 @@ namespace nucleus {
                            APS(STOPPED) APS(MAINTENANCE) APS(UNRECOVERABLE)
     MAKE_ENUM_AND_STRINGS(APPSTATE_ENUM, AppState, AppStateNames)
 
+    // forward declaration for Pool Manager
     template <class N>
-    class PoolManager; // forward declaration
+    class PoolManager;
 
+    ///@brief Root structure of the pool file
     template <class M>
     class AppPool {
-        // This is the root structure of the pool file
     public:
         pmem::obj::persistent_ptr<M> app;
         pmem::obj::p<AppState> app_state;
+        ~AppPool()=delete;
     };
 
+    ///@brief AppManager is the main container for the customer-developed app
     template <class A>
     class AppManager {
 
@@ -50,7 +53,7 @@ namespace nucleus {
             auto app_pool = pool_manager.pool();
             if (app_pool.root()->app == nullptr) {
                 Logging::log()->debug("MyApp persistent object not yet initialized - persisting MyApp Object");
-                pmem::obj::transaction::run(app_pool, [&] {
+                pmem::obj::transaction::run(app_pool, [this, &app_pool] {
                     app_pool.root()->app = pmem::obj::make_persistent<A>();
                     app_pool.root()->app_state = AppState::NEW;
                 });
@@ -69,28 +72,28 @@ namespace nucleus {
 
 
         void Run() {
-            Logging::log()->debug("AppManager is opening Application");
-            Logging::log()->debug("Current App State is {} ", GetAppStateName());
+            Logging::log()->debug("AppManager is opening Application. Current App State is {} ", GetAppStateName());
 
             auto app = pool_manager.pool().root()->app;
 
             if (GetAppState() == nucleus::INITIALIZING) {
                 throw nucleus::app_error("AppManager: App failed initialization last time. "
-                                                 "Delete pool and try again");
+                                         "Delete pool and try again");
             }
 
             if (GetAppState() == nucleus::NEW) {
-                Logging::log()->warn("AppManager: App initializing after first persistence");
+                Logging::log()->debug("AppManager: App initializing after first persistence");
                 SetAppState(nucleus::INITIALIZING);
                 app->Initialize();
             }
 
             if (GetAppState() != nucleus::INITIALIZING && GetAppState() != nucleus::STOPPED ) {
-                Logging::log()->warn("AppManager: Abnormal App State detected. Attempting to restart "
-                                          "however application state may be compromised");
+                Logging::log()->warn("AppManager: Abnormal App State detected."
+                                     "Starting App however application state may be compromised");
             }
 
             SetAppState(nucleus::STARTING);
+            RegisterRestRoutes();
             app->Start();
 
             Logging::log()->trace("AppManager is creating ReST Server");
@@ -137,7 +140,7 @@ namespace nucleus {
 
         void SetAppState(AppState state) {
 
-            pmem::obj::transaction::run(pool_manager.pool(), [&] {
+            pmem::obj::transaction::run(pool_manager.pool(), [&state, this] {
                 Logging::log()->trace("App State is being set to {} (previous state {})",
                                       GetAppStateName(state), GetAppStateName());
                 pool_manager.pool().root()->app_state = state; });
@@ -169,6 +172,27 @@ namespace nucleus {
                     Exit(fmt::format("Condition path is specified but does not or no longer exists."
                                      " Path is {}", config::condition_path));
             }
+        }
+
+        void RegisterRestRoutes() {
+            auto router = RestServerRouter::getRestServerRouter().getRouter();
+
+            router->http_get(
+                    R"(/api/v1/ping)",
+                    [this](auto req, auto params) {
+                        nlohmann::json j = "{}"_json;
+                        j["data"]["state"] = GetAppStateName();
+                        j["response"]["message"] = "Ping command received";
+                        return req->create_response()
+                                .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
+                                .set_body( j.dump())
+                                .done();
+                    });
+
+
+            // return the router to the RestServer
+            RestServerRouter::getRestServerRouter().setRouter(std::move(router));
+
         }
     };
 

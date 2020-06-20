@@ -19,11 +19,11 @@ name: Build and Test Nucleus
 # events but only for the master branch
 on:
   push:
-    branches: [ master, dev, integrate/thingbase ]
+    branches: [ master, dev, integrate/thingbase, fixes/sonar ]
 
   # *** warning *** - be careful if using runners on own infra on public repos with public pull requests
   pull_request:
-    branches: [ master, dev, integrate/thingbase ]
+    branches: [ master, dev, integrate/thingbase, fixes/sonar ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -31,6 +31,8 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ubuntu-20.04
+    env:
+      SONAR_LOGIN: ${{ secrets.SONAR_SONARCLOUD_LOGIN }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -41,6 +43,12 @@ jobs:
 
     #- name: install-package-deps
     #  run: sudo apt-get install libtbb-dev libldap2-dev libhwloc-dev
+
+    - name: install-python-deps
+      run: python3 -m pip install keyring keyrings-alt
+
+    - name: save-sonar-login
+      run: python3 util/sonar-save-login.py
 
     - name: install-pmdk-deps
       run: sudo apt-get install libpmemobj-cpp-dev

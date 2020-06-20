@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-#include "MyApp.hpp"
+#include "Customers.hpp"
 #include "RestServer.hpp"
 
 using namespace nucleus;
@@ -44,7 +44,7 @@ Customers::~Customers()
 {
     Logging::log()->debug("Customers Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
-    pmem::obj::transaction::run(pop, [&] {
+    pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<pmem::obj::vector<Customer>>(p_customer_list);
             });
 }
@@ -57,7 +57,7 @@ Customers::Initialize()
 
     // Add sample customers
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
-    pmem::obj::transaction::run(pop, [&] {
+    pmem::obj::transaction::run(pop, [this] {
 
         p_customer_list->emplace_back("Peter", "Singapore", 26);
         p_customer_list->emplace_back("Elizabeth", "Australia", 13);
@@ -77,7 +77,7 @@ Customers::Start(){
 
     router->http_get(
         R"(/api/v1/app/customers)",
-        [&](auto req, auto params) {
+        [this](auto req, auto params) {
 
             json j = "{}"_json;
             j["data"]["customers"] = "[]"_json;
@@ -99,13 +99,13 @@ Customers::Start(){
 
     router->http_post(
         R"(/api/v1/app/customers)",
-        [&](auto req, auto params) {
+        [this](auto req, auto params) {
 
             Logging::log()->trace("MyApp adding new customer");
 
             auto j_req = json::parse(req->body());
             auto pop = pmem::obj::pool_by_pptr(p_customer_list);
-            pmem::obj::transaction::run(pop, [&] {
+            pmem::obj::transaction::run(pop, [this, &j_req] {
                 p_customer_list->emplace_back(j_req["name"], j_req["city"], j_req["order_count"].template get<int>());
             });
 

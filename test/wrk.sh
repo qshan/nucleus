@@ -16,7 +16,7 @@
 # along with this program; if not, see http://www.gnu.org/licenses/
 
 
-test_url=$'http://127.0.0.1:8080/api/v1/ready'
+test_url=$'http://127.0.0.1:8080/api/v1/ping'
 
 no_wrk=$'
 This script requires \'wrk\' but it is not installed.

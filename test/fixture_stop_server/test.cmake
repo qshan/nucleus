@@ -1,5 +1,6 @@
-# TODO - check that process is still running before exiting, via PID
-# TODO - include check to make sure process has exited... need to check pid file
+# TODO - check that process is still running before exiting, via PID. See start_interrupt for info
+# TODO - include check to make sure process has exited... need to check pid file again
+
 include(${TEST_CASE_HELPERS})
 
 test_case_start()

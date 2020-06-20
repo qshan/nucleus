@@ -22,8 +22,6 @@ using nlohmann::json;
 using namespace pmem::obj;
 
 MyApp::MyApp()
-    : p_message(make_persistent<pmem::obj::string>("Hello World"))
-    , p_update_count(0)
 {
     Logging::log()->debug("MyApp Persistent Constructor called");
 }
@@ -32,7 +30,7 @@ MyApp::~MyApp()
 {
     Logging::log()->debug("MyApp Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_message);
-    pmem::obj::transaction::run(pop, [&] {
+    pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<pmem::obj::string>(p_message);
             });
 }
@@ -55,7 +53,7 @@ MyApp::Start(){
 
     router->http_get(
             R"(/api/v1/app/message)",
-            [&](auto req, auto params) {
+            [this](auto req, auto params) {
 
                 json j = "{}"_json;
                 j["data"]["value"] = p_message->c_str();
@@ -68,13 +66,13 @@ MyApp::Start(){
 
     router->http_put(
             R"(/api/v1/app/message)",
-            [&](auto req, auto params) {
+            [this](auto req, auto params) {
 
                 auto j_req = json::parse(req->body());
                 std::string message_value = j_req["value"];
                 Logging::log()->trace("MyApp Message is being set to {}.", message_value);
                 auto pop = pmem::obj::pool_by_pptr(p_message);
-                pmem::obj::transaction::run(pop, [&] {
+                pmem::obj::transaction::run(pop, [this, &message_value] {
                     p_message->assign(message_value);
                     p_update_count++;
                 });

@@ -48,7 +48,7 @@ public:
     {
         int exitCode = EXIT_FAILURE;
 
-        if (not configuration_error.empty()) {
+        if (!configuration_error.empty()) {
             return print_help();
         }
 
@@ -91,7 +91,7 @@ private:
     std::string executable_name;
     std::string configuration_error;
 
-    void set_signal_handlers(){
+    void set_signal_handlers() const {
         // Install CTRL-C handler to try exit gracefully.
         // TODO - install handlers for other signals, eg if running a daemon or windows service
 
@@ -143,7 +143,7 @@ private:
 
     };
 
-    int print_help() {
+    int print_help() const {
 
         std::stringstream usage;
         usage << std::endl << "Usage: " << executable_name << " [OPTIONS]" << std::endl

@@ -58,6 +58,10 @@ function(add_test_case name )
 
     message(STATUS "Adding CMAKE test case ${name} for ${APP_NAME}")
 
+    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/test/${name}/test.cmake)
+        message(FATAL_ERROR "Cannot find CMAKE file for ${name} at ${PROJECT_SOURCE_DIR}/test/${name}/test.cmake")
+    endif()
+
     #message(STATUS "TEST PSD ${PROJECT_SOURCE_DIR} CSD ${CMAKE_SOURCE_DIR} CCSD ${CMAKE_CURRENT_SOURCE_DIR}"
     #               " CLD ${CMAKE_CURRENT_LIST_DIR} NSD ${NUCLEUS_SOURCE_DIR}")
 
@@ -75,8 +79,8 @@ function(add_test_case name )
             -DTEST_SERVER_SCHEME=${TEST_SERVER_SCHEME}
             -DTEST_SERVER_ADDRESS=${TEST_SERVER_ADDRESS}
             -DTEST_SERVER_PORT=${TEST_SERVER_PORT}
-            ${EXTRA_TEST_ARGS}
             -P ${PROJECT_SOURCE_DIR}/test/${name}/test.cmake
+            ${EXTRA_TEST_ARGS}
     )
 
 endfunction()
@@ -85,6 +89,10 @@ endfunction()
 function(add_test_case_python name )
 
     message(STATUS "Adding PYTHON test case ${name} for ${APP_NAME}")
+
+    if (NOT EXISTS ${PROJECT_SOURCE_DIR}/test/${name}/test.py)
+        message(FATAL_ERROR "Cannot find Python file for ${name} at ${PROJECT_SOURCE_DIR}/test/${name}/test.py")
+    endif()
 
     set(TEST_NAME  "${APP_NAME}__${name}")
 
