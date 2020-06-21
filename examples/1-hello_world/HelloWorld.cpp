@@ -14,38 +14,40 @@
 // along with this program; if not, see http://www.gnu.org/licenses/
 
 
-#include "MyApp.hpp"
+#include "HelloWorld.hpp"
 #include "RestServer.hpp"
 
 using namespace nucleus;
+using namespace nucleus::examples::helloworld;
 using nlohmann::json;
 using namespace pmem::obj;
 
-MyApp::MyApp()
+HelloWorld::HelloWorld()
 {
-    Logging::log()->debug("MyApp Persistent Constructor called");
+    Logging::log()->debug("HelloWorld Persistent Constructor called");
 }
 
-MyApp::~MyApp()
+HelloWorld::~HelloWorld()
 {
-    Logging::log()->debug("MyApp Persistent Destructor called");
+    Logging::log()->debug("HelloWorld Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_message);
     pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<pmem::obj::string>(p_message);
-            });
+    });
 }
 
 void
-MyApp::Initialize()
+HelloWorld::Initialize()
 {
     // Initialize any child objects here
-    Logging::log()->trace("MyApp is initializing");
+    Logging::log()->trace("HelloWorld is initializing");
 
 }
 
 void
-MyApp::Start(){
-    Logging::log()->debug("MyApp is starting");
+HelloWorld::Start(){
+
+    Logging::log()->debug("HelloWorld is starting");
 
     // Map the APIS
 
@@ -70,7 +72,7 @@ MyApp::Start(){
 
                 auto j_req = json::parse(req->body());
                 std::string message_value = j_req["value"];
-                Logging::log()->trace("MyApp Message is being set to {}.", message_value);
+                Logging::log()->trace("HelloWorld Message is being set to {}.", message_value);
                 auto pop = pmem::obj::pool_by_pptr(p_message);
                 pmem::obj::transaction::run(pop, [this, &message_value] {
                     p_message->assign(message_value);
@@ -78,7 +80,8 @@ MyApp::Start(){
                 });
 
                 json j = "{}"_json;
-                j["response"]["message"] = fmt::format("Message value updated {} time(s) so far", p_update_count);
+                j["response"]["message"] = fmt::format("Message value updated {} time(s) so far",
+                                                       p_update_count);
 
                 return req->create_response()
                         .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
@@ -94,9 +97,9 @@ MyApp::Start(){
 }
 
 void
-MyApp::Stop()
+HelloWorld::Stop()
 {
     // if you create any volatile objects, delete them here
-    Logging::log()->trace("MyApp is stopping");
+    Logging::log()->trace("HelloWorld is stopping");
 
 }

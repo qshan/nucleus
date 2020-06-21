@@ -21,23 +21,23 @@
 
 // TODO - add further validation to provided values
 
-namespace nucleus::config
-{
+namespace nucleus::config {
 
-    // declare globals
-    spdlog::level::level_enum log_level;
-    std::string log_file;
-    size_t pool_main_size;
-    std::string pool_main_file;
+// declare globals
+spdlog::level::level_enum log_level;
+std::string log_file;
+size_t pool_main_size;
+std::string pool_main_file;
 
-    unsigned short rest_port;
-    std::string rest_address;
-    size_t rest_threads;
+unsigned short rest_port;
+std::string rest_address;
+size_t rest_threads;
 
-    std::string condition_path;
+std::string condition_path;
 
 
-bool load_config(const std::string& executable_name_arg, int argc, char *argv[]) {
+bool
+load_config(const std::string& executable_name_arg, int argc, char *argv[]) {
 
     // These are default settings.
     config::log_level = spdlog::level::debug;
@@ -63,7 +63,8 @@ bool load_config(const std::string& executable_name_arg, int argc, char *argv[])
 }
 
 
-int handler(void* user, const char* section, const char* name, const char* value) {
+int
+handler(void* user, const char* section, const char* name, const char* value) {
 
     bool matched = false;
 
@@ -137,5 +138,6 @@ args_to_string(int argc, char *argv[] ) {
     }
     return args;
 }
+
 
 }

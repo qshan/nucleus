@@ -19,30 +19,31 @@
 #include <string>
 #include "Logging.hpp"
 
-namespace nucleus::config
-{
-    bool load_config(const std::string& name, int argc, char *argv[]);
-    int handler(void* user, const char* section, const char* name, const char* value);
-    std::string args_to_string(int argc, char *argv[]);
+namespace nucleus::config {
 
-    // These are the config values to use.
-    // Also add to Config.cpp and nucleus.conf.template
+bool load_config(const std::string& name, int argc, char *argv[]);
 
-    // For logging
-    extern spdlog::level::level_enum log_level;
-    extern std::string log_file;
+int handler(void* user, const char* section, const char* name, const char* value);
+std::string args_to_string(int argc, char *argv[]);
 
-    // For PoolManager - main pool file
-    extern size_t pool_main_size;
-    extern std::string pool_main_file;
+// These are the config values to use.
+// Also add to Config.cpp and nucleus.conf.template
 
-    // For ReSTServer
-    extern unsigned short rest_port;
-    extern std::string rest_address;
-    extern size_t rest_threads;
+// For logging
+extern spdlog::level::level_enum log_level;
+extern std::string log_file;
 
-    // For Testing or without ReST Server
-    extern std::string condition_path;
+// For PoolManager - main pool file
+extern size_t pool_main_size;
+extern std::string pool_main_file;
+
+// For ReSTServer
+extern unsigned short rest_port;
+extern std::string rest_address;
+extern size_t rest_threads;
+
+// For Testing or without ReST Server
+extern std::string condition_path;
 
 }
 

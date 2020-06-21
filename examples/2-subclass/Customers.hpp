@@ -18,9 +18,15 @@
 #include "Platform.hpp"
 #include <string>
 
+namespace nucleus::examples::subclass {
+
+
 class Customers;
 
-// This is the vector element - ie a single customer.
+/**
+ * This is the customer class to be included in the Customers container
+ * @note Persistent Class
+ */
 class Customer {
 
 friend Customers;
@@ -39,8 +45,10 @@ private:
     pmem::obj::p<int> order_count;
 };
 
-// This is the container -ie vector of customer
-
+/**
+ * Manages a container of Customer.
+ * @note Persistent Class
+ */
 class Customers {
 
 public:
@@ -62,5 +70,8 @@ private:
     // These are the persistent memory objects for this class
     pmem::obj::persistent_ptr<pmem::obj::vector<Customer>> p_customer_list;
 };
+
+
+}
 
 #endif //CUSTOMER_H

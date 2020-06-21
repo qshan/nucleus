@@ -23,6 +23,7 @@
 
 namespace nucleus {
 
+/// @brief manages Persistent Memory Pools
 template <class N>
 class PoolManager {
 

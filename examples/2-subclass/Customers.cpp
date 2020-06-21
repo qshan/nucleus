@@ -17,6 +17,8 @@
 #include "RestServer.hpp"
 
 using namespace nucleus;
+using namespace nucleus::examples::subclass;
+
 using nlohmann::json;
 using namespace pmem::obj;
 
@@ -46,7 +48,7 @@ Customers::~Customers()
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
     pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<pmem::obj::vector<Customer>>(p_customer_list);
-            });
+    });
 }
 
 void
@@ -101,7 +103,7 @@ Customers::Start(){
         R"(/api/v1/app/customers)",
         [this](auto req, auto params) {
 
-            Logging::log()->trace("MyApp adding new customer");
+            Logging::log()->trace("HelloWorld adding new customer");
 
             auto j_req = json::parse(req->body());
             auto pop = pmem::obj::pool_by_pptr(p_customer_list);

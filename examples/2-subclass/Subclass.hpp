@@ -17,17 +17,23 @@
 #define MYAPP_H
 
 #include "Platform.hpp"
+#include "Customers.hpp"
 
-class MyApp {
+namespace nucleus::examples::subclass {
+
+/**
+ * Demonstrates including a persistent memory class into a persistent container
+ */
+class SubClass {
 
 public:
-    MyApp();            // this at pool creation or app reset. It does not run on each application start
-    ~MyApp();           // this happens when the class instance is being deleted from the pool. It is not called on app close.
+    SubClass();            // this at pool creation or app reset. It does not run on each application start
+    ~SubClass();           // this happens when the class instance is being deleted from the pool. It is not called on app close.
 
-    MyApp(const MyApp&)                = delete; // Copy
-    MyApp(MyApp&&)                     = delete; // Move
-    MyApp& operator= ( const MyApp & ) = delete; // Copy Assign
-    MyApp& operator= ( MyApp && )      = delete; // Move assign
+    SubClass(const SubClass&)                = delete; // Copy
+    SubClass(SubClass&&)                     = delete; // Move
+    SubClass& operator= (const SubClass & ) = delete; // Copy Assign
+    SubClass& operator= (SubClass && )      = delete; // Move assign
 
     void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
     void Start();       // this happens each time the applications runs
@@ -36,10 +42,12 @@ public:
     inline static const int layout_version = 0;
 
 private:
-    // These are the persistent memory objects for this application.
-    pmem::obj::persistent_ptr<pmem::obj::string> p_message {pmem::obj::make_persistent<pmem::obj::string>("Hello World")};
-    pmem::obj::p<int> p_update_count {0};
+    // These are the persistent memory objects for this class.
+    pmem::obj::persistent_ptr<Customers> p_customers {pmem::obj::make_persistent<Customers>()};
 
 };
+
+
+}
 
 #endif //MYAPP_H

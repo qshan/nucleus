@@ -51,8 +51,12 @@
 #include "Config.hpp"
 #include "Utilities.hpp"
 
-namespace nucleus {
+namespace nucleus::exceptions {
 
+/**
+ * Exception for an error in the Nucleus application manager.
+ * This may be due to incorrect or failed initialisation of the AppManager instance
+ */
 class app_error : public std::exception {
 
 public:

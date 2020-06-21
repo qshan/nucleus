@@ -181,7 +181,7 @@ endfunction()
 
 # === Choose which app to build ========================================================================================
 
-# If building your own app within tree, place it in ./MyApp. This will work for simple tests but for more complex
+# If building your own app within tree, place it in ./HelloWorld. This will work for simple tests but for more complex
 # projects its better to make Nucleus a subdirectory of your project and include it as git submodule (for example)
 
 # To use nucleus in a subdirectory of your project, add your own CMakeLists.txt at the top level and include:
@@ -273,10 +273,15 @@ if (BUILD_EXAMPLES)
 
 endif()
 
-add_custom_target( analyze
+add_custom_target(analyze
     COMMAND util/sonar-build-wrapper.sh
     COMMAND ${CMAKE_COMMAND} --build build --target test
     COMMAND util/sonar-run.sh
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     COMMENT "Running SONAR analysis. If sonar not installed, use util/sonar-install.sh"
+)
+
+add_custom_target(docs
+        COMMAND doxygen doc/main.Doxyfile.in
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )

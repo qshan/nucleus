@@ -26,7 +26,20 @@
 #include "Platform.hpp"
 #include "restinio/all.hpp"
 
+namespace nucleus {
 
+/**
+ * RestServerRouter manages the Router for URLs for RestServer.
+ * The router controls which functions to call for various urls like `/api/v1/ready`.
+ *
+ * Routes can only be set during application startup, typically as part of a `Start()` function.
+ * 1. Use `auto router = getRestServerRouter().getRouter()` to get the router.
+ * 2. Set routes using router->http_get(...) (see HelloWorld for basic examples of get and put verbs)
+ * 3. **important** Return the router via `getRestServerRouter().setRouter(std::move(router));`
+ *
+ * @note If the router is not returned, the RestServer will not start and will fail with exception
+ *
+ */
 class RestServerRouter {
 
 public:
@@ -39,7 +52,9 @@ private:
     using router_t = restinio::router::express_router_t<>;
     std::unique_ptr<router_t> router = std::make_unique<router_t>();
 };
-
+/**
+ * RestServer provides a ReST-ful interface to persistent applications.
+ */
 class RestServer {
 
 public:
@@ -51,6 +66,7 @@ public:
     RestServer &operator=(const RestServer &) = delete;
 
 private:
+
     using my_traits_t = restinio::traits_t<
             restinio::asio_timer_manager_t,
             restinio::null_logger_t,
@@ -61,4 +77,7 @@ private:
 };
 
 
+}
 #endif //NUCLEUS_REST_HPP
+
+

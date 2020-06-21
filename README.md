@@ -1,8 +1,8 @@
 # **Nucleus: For Persistent Memory Native Applications**
 
-![Build and Test Nucleus](https://github.com/axomem/nucleus/workflows/Build%20and%20Test%20Nucleus/badge.svg)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=bugs)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
+[![Build and Test](https://github.com/axomem/nucleus/workflows/Build%20and%20Test/badge.svg)](https://github.com/axomem/nucleus/actions)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=coverage)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=bugs)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=axomem_nucleus&metric=alert_status)](https://sonarcloud.io/dashboard?id=axomem_nucleus)
@@ -41,16 +41,18 @@ for development and testing. By default Nucleus will use regular disk (although 
 
 ### Cross platform support
 At present Nucleus favors Linux - specifically Fedora v31+. It's quite likely you can get 
-other distributions running with not too much pain.  
+other recent distributions running with not too much pain.   
 
 Nucleus can also be built on Windows via cmake, vcpkg and Visual Studio. Minimum is Microsoft "Visual Studio 15 2017 Win64". 
 
 ### Dependencies requiring installing or building
 
-At present there are these main dependencies:
-* [NDCTL](https://github.com/pmem/ndctl) minimum v60.1
+These are the main dependencies:
+* A compiler that supports C++17
 * [Persistent Memory Development Kit (PMDK)](https://github.com/pmem/pmdk) minimum v1.6
 * [PMDK C++ Bindings](https://github.com/pmem/libpmemobj-cpp) minimum v1.8
+* Optional - Python3 for test case support
+* Optional - Doxygen for generating documentation
 
 On Linux, you may need to build these from sources depending on your distribution age.
 
@@ -62,7 +64,7 @@ of [this page](https://github.com/pmem/libpmemobj-cpp). Make sure to set your co
 
 ### Building the Nucleus "Hello World" app
 
-On Linux this builds Nucleus our "hello world" example app in the ``examples/1-hello_world`` directory:
+On Linux this builds Nucleus with the example apps in the ``examples`` directory:
 
 ```shell script
 mkdir build
@@ -76,34 +78,32 @@ The default build type is Debug. Specify build type ``cmake -DCMAKE_BUILD_TYPE=R
 On Windows, there is a build helper called ```build.cmd``` that can help you build the example with cmake.
 
 ### Running
-The binary executable will be written to `./bin/nucleus`.
-Run `./nucleus.sh` after confirming Nucleus binary file is in `./bin`. This uses the ```nucleus.conf``` file in the base directory.
+The binaries executable will be written to `./bin`. Run `./1-hello_world` - this will use all default configurations. 
 
-All entries in the conf file can also be specified on the command line, eg:
+You can also use a conf file such as the example `nucleus.conf`, and these settings can also be specified
+on the command line, eg:
 ```shell script
-./bin/nucleus --config_file=nucleus.conf --log_level=trace
+./bin/1-hello_world --config_file=nucleus.conf --log_level=trace
 ```
 
 ### Output
-Once running you should see the log output on screen. It is also logged into ``./nucleus.log`` by default.
+Once running you should see the log output on screen. It is also logged into ``./1-hello_world.log`` by default.
 ```
-[2019-08-01 15:05:21.301] [main] [info] Logging has been initialised with name main and loglevel info and saved to ./nucleus.log
-[2019-08-01 15:05:21.301] [main] [info] Built with Nucleus. See https://axomem.io for more info, and follow us on Twitter @axomemio for updates
-[2019-08-01 15:05:21.301] [main] [info] Nucleus is starting
-[2019-08-01 15:05:21.301] [main] [info] Creating new pool ./nucleus.pmem with layout 'myapp_v0.0.1' and size 536870912
-[2019-08-01 15:05:21.378] [main] [info] Pool successfully created.
-[2019-08-01 15:05:21.378] [main] [info] AppManager: App initializing after first persistence
-[2019-08-01 15:05:21.379] [main] [info] ReST Server configured on port 8080 with 4 threads across 8 CPUs
-***
-Nucleus is running. Default site is http://localhost:8080/api/v1/ready
-Press CTRL-C once to shutdown normally. May require up to 3 presses in abnormal termination
-***
+[2020-06-21 09:24:53.140] [main] [info] Logging has been initialised with name main and loglevel info and saved to ./1-hello_world.log
+[2020-06-21 09:24:53.140] [main] [info] The Nucleus engine is starting
+[2020-06-21 09:24:53.140] [main] [info] Built with Nucleus. See https://axomem.io for more info, and follow us on Twitter @axomemio for updates
+[2020-06-21 09:24:53.182] [main] [info] Opening existing pool ./1-hello_world.pmem with layout N7nucleus8examples10helloworld10HelloWorldE__v0
+[2020-06-21 09:24:53.238] [main] [info] ReST Server starting at http://localhost:8080 with 4 threads across 4 CPUs
+[2020-06-21 09:24:53.244] [main] [info] ***
+[2020-06-21 09:24:53.244] [main] [info] Server is running. Default site is http://localhost:8080/api/v1/ready
+[2020-06-21 09:24:53.244] [main] [info] Press CTRL-C once to shutdown normally. May require up to 3 presses in abnormal termination
+[2020-06-21 09:24:53.244] [main] [info] ***
+
 ```
 
-You can check Nucleus is running by opening ``http://localhost:8080/api/v1/ready`` in your browser. You should see:
+You can check Nucleus is running by opening ``http://localhost:8080/api/v1/ping`` in your browser. You should see:
 ```json
-{"data":{},
- "response":{"message":"Ready command received successfully"}}
+{"data":{"state":"RUNNING"},"response":{"message":"Ping command received"}}
 ```
 
 Now you can test the application by getting ``http://localhost:8080/api/v1/app/message``: 
@@ -127,9 +127,9 @@ memory, you can restart the server and check the value again too!
 
 ### Start your own app!
 
-Start by reviewing the code in the examples directory. You'll see three files:
+Start by reviewing the code in the examples/1-hello_world directory. You'll see three files:
 
-#### MyApp.hpp
+#### HelloWorld.hpp
 This defines the base class that Nucleus manages on Persistent Memory. The data objects in here will survive application restarts!
 Specifically, you'll see these variable - these are used in the API above:
 ```cpp
@@ -141,7 +141,7 @@ Here you can add any types supported by [libpmemobj-c++](https://github.com/pmem
 including plain C++ types, vectors, arrays, strings and even structs and classes.
 You'll need to add code in the .cpp file to create and update these though.
 
-#### MyApp.cpp
+#### HelloWorld.cpp
 This holds application specific code, including the transactions required to create new objects and update data.
 We update the persistent variables in a transaction:
 
@@ -165,16 +165,10 @@ server. Here is the [RESTinio documentation](https://stiffstream.com/en/docs.htm
 This is the starting point for the app. Main() hands control to Nucleus and it does all the rest.
 
 ### Other examples 
-We've started putting more examples into the /examples dir. To build these you can run 
-cmake again as follows:
-```shell script
-cd build
-cmake -DBUILD_EXAMPLE=2-subclass
-make
-```
+We've started putting more examples into the /examples dir. After building they will also be in the `./bin directory`
 
 ### Your own app
-You can use this the "Hello World" template as a starting point for your own Persistent Memory native applications! :rocket:
+You can use the "Hello World" template as a starting point for your own Persistent Memory native applications! :rocket:
 
 1. Create a directory for your new app. Two options are:
     - Create a directory within the source tree called ``./myapp`` - any files here will be .gitignored and you can even put your own git repository here
@@ -212,7 +206,8 @@ Nucleus can run as a Daemon under SystemD using the simple service model. A unit
 Windows service installation is in backlog. Vote for it [here](https://github.com/axomem/nucleus/issues/41).
 
 ## Documentation
-The main guidance at present is this README.md file. Further documentation is coming.  
+Documentation can be compiled by using `make docs` from a build directory. This will put HTML and man page 
+documentation into ./build/docs.  
 
 ## How to support the Nucleus project
 We'd love to hear from you. Some ways you can assist include:
@@ -223,4 +218,4 @@ We'd love to hear from you. Some ways you can assist include:
 ## Keep in touch! 
 Please follow us via one or more of your preferred channels:
 * Watch us on [GitHub](https://github.com/axomem/nucleus) (perhaps :star: us too!)
-* Follow us on [LinkedIn](https://www.linkedin.com/company/axomem/) or [Twitter - @axomemio](https://twitter.com/axomemio)
+* Follow us on [LinkedIn](https://www.linkedin.com/company/axomem/) or [Twitter - \@axomemio](https://twitter.com/axomemio)

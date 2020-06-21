@@ -13,37 +13,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, see http://www.gnu.org/licenses/
 
-#include "MyApp.hpp"
+#include "Subclass.hpp"
 #include "RestServer.hpp"
 
 using namespace nucleus;
+using namespace nucleus::examples::subclass;
 using namespace pmem::obj;
 
-MyApp::MyApp()
+SubClass::SubClass()
 {
-    Logging::log()->debug("MyApp Persistent Constructor called ");
+    Logging::log()->debug("SubClass Persistent Constructor called ");
 }
 
-MyApp::~MyApp()
+SubClass::~SubClass()
 {
-    Logging::log()->debug("MyApp Persistent Destructor called");
+    Logging::log()->debug("SubClass Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_customers);
     pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<Customers>(p_customers);
-            });
+    });
 }
 
 void
-MyApp::Initialize()
+SubClass::Initialize()
 {
     // Initialize any child objects here
-    Logging::log()->trace("MyApp is initializing");
+    Logging::log()->trace("SubClass is initializing");
     p_customers->Initialize();
 }
 
 void
-MyApp::Start(){
-    Logging::log()->debug("MyApp is starting");
+SubClass::Start(){
+    Logging::log()->debug("SubClass is starting");
 
     p_customers->Start();
     // App::init(this); RUNTIME App instance should be called here, if needed
@@ -51,10 +52,10 @@ MyApp::Start(){
 }
 
 void
-MyApp::Stop()
+SubClass::Stop()
 {
     // if you create any volatile objects, delete them here
     p_customers->Stop();
-    Logging::log()->trace("MyApp is stopping");
+    Logging::log()->trace("SubClass is stopping");
 
 }

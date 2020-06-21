@@ -14,12 +14,15 @@
 // along with this program; if not, see http://www.gnu.org/licenses/
 
 #include "Nucleus.hpp"
-#include "MyApp.hpp"
+#include "Subclass.hpp"
+
+using namespace nucleus;
+using namespace nucleus::examples::subclass;
 
 int
 main(int argc, char *argv[]) {
 
-    return nucleus::Nucleus<MyApp>(argc, argv).Run();
+    return nucleus::Nucleus<SubClass>(argc, argv).Run();
 
 }
 

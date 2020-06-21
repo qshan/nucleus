@@ -14,11 +14,14 @@
 // along with this program; if not, see http://www.gnu.org/licenses/
 
 #include "Nucleus.hpp"
-#include "MyApp.hpp"
+#include "HelloWorld.hpp"
+
+using namespace nucleus;
+using namespace nucleus::examples::helloworld;
 
 int
 main(int argc, char *argv[]) {
 
-    return nucleus::Nucleus<MyApp>(argc, argv).Run();
+    return Nucleus<HelloWorld>(argc, argv).Run();
 
 };

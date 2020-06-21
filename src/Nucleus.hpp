@@ -23,14 +23,26 @@
 
 namespace nucleus {
 
-template <class M>
+/**
+ * Nucleus manages the overall configuration and execution of the environment.
+ * It loads configuration, starts logging, constructs the `AppManager<T>` instance and runs it.
+ * It also handles the Signal handling for responding to OS calls like CTRL-C (SIGINT) or daemon termination (SIGHALT)
+ * ### Example
+ * Automatic execution: `return Nucleus<MyApp>(argc, argv).Run();`
+ */
+template <class T>
 class Nucleus {
 
-    static AppManager<M> *p_app_manager ;
+    static AppManager<T> *p_app_manager ;
     static int signal_times;
 
 public:
-
+    /**
+     * Start Nucleus using argc and argv typically from `main()` to configure the instance.
+     * @tparam T An instance of `AppManager<MyApp>`
+     * @param argc Arg count
+     * @param argv Arg string array
+     */
     Nucleus (int argc, char *argv[]) {
 
         executable_name = std::filesystem::path(argv[0]).filename();
@@ -44,6 +56,10 @@ public:
 
     }
 
+    /**
+     * Run nucleus and block the thread until exit
+     * @return An OS exit code with 0 as successful completion and 1 otherwise.
+     */
     int Run()
     {
         int exitCode = EXIT_FAILURE;
@@ -56,11 +72,11 @@ public:
         Logging::init();
         auto log = Logging::log();
 
-        log->info("Nucleus is starting");
+        log->info("The Nucleus engine is starting");
 
         try {
 
-            auto app_manager = AppManager<M>();
+            auto app_manager = AppManager<T>();
 
             p_app_manager = &app_manager;
 
@@ -118,12 +134,12 @@ private:
     }
     #endif
 
-    static void process_signal (int s) {
+    static void process_signal (int signal) {
 
         signal_times++;
         if (signal_times == 1) {
             try {
-                p_app_manager->Exit(s);
+                p_app_manager->Exit(signal);
             } catch (const std::exception &exc) {
                 Logging::log()->critical("Exception while attempting to request AppManager Exit {}", exc.what());
                 signal_times = 99;
