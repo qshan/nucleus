@@ -51,8 +51,8 @@ friend class Nucleus;
 
 public:
 
-    AppManager() {
-        Logging::log()->trace("Constructing AppManager");
+    explicit AppManager(const Config& config) : config(config) {
+        Logging::log()->trace("Constructing AppManager for app {}", config.app_name);
         auto app_pool = pool_manager.pool();
         if (app_pool.root()->app == nullptr) {
             Logging::log()->debug("HelloWorld persistent object not yet initialized - persisting HelloWorld Object");
@@ -101,17 +101,19 @@ public:
         RegisterRestRoutes();
         app->Start();
 
-        Logging::log()->trace("AppManager is creating ReST Server");
+        Logging::log()->trace("AppManager is creating ReST Server. Disable ReST {}",
+                         Config::to_string(config.rest_disable));
+
         std::unique_ptr<RestServer> rest_server(new RestServer(RestServerRouter::getRestServerRouter().getRouter(),
-                                                                  config::rest_address, config::rest_port,
-                                                                  config::rest_threads));
+                                                                  config.rest_address, config.rest_port,
+                                                                  config.rest_threads));
 
         SetAppState(nucleus::RUNNING);
         Logging::log()->debug("AppManager Entering Main thread run loop with App State {}", GetAppStateName());
 
         Logging::log()->info("***");
         Logging::log()->info("Server is running. Default site is "
-                             "http://{}:{}/api/v1/ready", config::rest_address, config::rest_port);
+                             "http://{}:{}/api/v1/ready", config.rest_address, config.rest_port);
         Logging::log()->info("Press CTRL-C once to shutdown normally. May require up to 3 presses "
                              "in abnormal termination");
         Logging::log()->info("***");
@@ -135,8 +137,11 @@ public:
 
 private:
 
-    PoolManager<AppPool<T>> pool_manager {config::pool_main_file,
-                                          fmt::format("{}__v{}", typeid(T).name(), T::layout_version)};
+    Config config;
+
+    PoolManager<AppPool<T>> pool_manager {config.pool_main_file,
+                                          fmt::format("{}__v{}", typeid(T).name(), T::layout_version),
+                                          config.pool_main_size};
 
     void SetAppState(AppState state) {
 
@@ -179,9 +184,9 @@ private:
     };
 
     void CheckConditionPathExists() {
-        if (!config::condition_path.empty() && !std::filesystem::exists(config::condition_path)) {
+        if (!config.condition_path.empty() && !std::filesystem::exists(config.condition_path)) {
                 Exit(fmt::format("Condition path is specified but does not or no longer exists."
-                                 " Path is {}", config::condition_path));
+                                 " Path is {}", config.condition_path));
         }
     }
 

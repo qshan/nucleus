@@ -17,33 +17,97 @@
 #define NUCLEUS_CONFIG_HPP
 
 #include <string>
-#include "Logging.hpp"
+#include <sstream>
+#include "spdlog/spdlog.h"
 
-namespace nucleus::config {
+namespace nucleus {
+/**
+ * Manages the configuration context.
+ * @see Enhancements - https://github.com/axomem/nucleus/issues/55
+ */
 
-bool load_config(const std::string& name, int argc, char *argv[]);
+class Config {
 
-int handler(void* user, const char* section, const char* name, const char* value);
-std::string args_to_string(int argc, char *argv[]);
 
-// These are the config values to use.
-// Also add to Config.cpp and nucleus.conf.template
+public:
 
-// For logging
-extern spdlog::level::level_enum log_level;
-extern std::string log_file;
+    Config() = default;
+    explicit Config(const std::string& app_name);
+    virtual ~Config() = default;
 
-// For PoolManager - main pool file
-extern size_t pool_main_size;
-extern std::string pool_main_file;
+    void config_parse_args(int argc, char *argv[]);
 
-// For ReSTServer
-extern unsigned short rest_port;
-extern std::string rest_address;
-extern size_t rest_threads;
+    // These are the config values to use.
+    // Also add to Config.cpp and nucleus.conf.template
 
-// For Testing or without ReST Server
-extern std::string condition_path;
+    std::string app_name;
+
+    // For logging
+    spdlog::level::level_enum log_level = spdlog::level::debug;
+    std::string log_file = fmt::format("./{}.log", "nucleus");
+
+    // For PoolManager - main pool file
+    std::string pool_main_file = fmt::format("./{}.pmem", "nucleus");
+    size_t pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
+
+    // For ReSTServer
+    bool rest_disable = false;
+    unsigned short rest_port = 8080;
+    std::string rest_address = "127.0.0.1";
+    size_t rest_threads = 4;
+
+    // For Testing or without ReST Server
+    std::string condition_path;
+
+    static unsigned short parse_ip_port(const std::string& port);
+    static bool parse_bool(const std::string& bool_arg);
+    static std::string to_string(bool bool_arg);
+
+private:
+
+    /// Convert a set of args from command line into a string stream with EOL chars
+    static std::stringstream args_to_stringstream(int argc, char *argv[]);
+
+    /// Prototype of the callback for the config line processor
+    typedef std::function<void(std::string section, std::string name, std::string value)> handler_t;
+
+    /// Parse a stringstream of config items separated by EOL
+    void ini_parse_stringstream(std::stringstream& stream, const handler_t& callback);
+
+    /// Parse the given conf file
+    void ini_parse_file(const std::string& filename, const handler_t& callback);
+
+protected:
+
+    /**
+     * Process a given line from a config file and set to correct vars
+     * @param section - the conf section like [section]. Not currently used but may be expanded later.
+     * @param name Name of the config item
+     * @param value Value of the config item
+     */
+
+    virtual void handler(const std::string& section, const std::string& name, const std::string& value);
+
+    /// Trim all space chars on the left
+    ///@copyright trim function based on http://stackoverflow.com/a/217605
+    template <class CharT>
+    inline void ltrim(std::basic_string<CharT> & s) {
+        s.erase(s.begin(),
+                std::find_if(s.begin(), s.end(),
+                             [](int ch) { return !std::isspace(ch); }));
+    }
+
+    /// Trim all space chars on the right
+    ///@copyright trim function based on http://stackoverflow.com/a/217605
+    template <class CharT>
+    inline void rtrim(std::basic_string<CharT> & s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(),
+                             [](int ch) { return !std::isspace(ch); }).base(),
+                s.end());
+    }
+
+};
+
 
 }
 

@@ -28,7 +28,8 @@ template <class N>
 class PoolManager {
 
 public:
-    explicit PoolManager(const std::string &fileName_arg, const std::string &layout_arg) : file_name(fileName_arg) {
+    explicit PoolManager(const std::string &fileName_arg, const std::string &layout_arg, const size_t pool_main_size) :
+            file_name(fileName_arg) {
 
         Logging::log()->debug("PoolManager::() with pool file name {} and layout {}", file_name, layout_arg);
 
@@ -48,8 +49,8 @@ public:
         } else {
 
                 Logging::log()->info("Creating new pool {} with layout '{}' and size {}", file_name, layout_arg,
-                                     config::pool_main_size);
-                my_pool = pmem::obj::pool<N>::create(file_name, layout_arg, config::pool_main_size);
+                                     pool_main_size);
+                my_pool = pmem::obj::pool<N>::create(file_name, layout_arg, pool_main_size);
 
                 Logging::log()->info("Pool successfully created.");
                 Logging::log()->warn("Please remember this is an Alpha version of Nucleus");

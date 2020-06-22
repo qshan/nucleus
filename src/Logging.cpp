@@ -15,7 +15,6 @@
 
 #include <iostream>
 #include "Logging.hpp"
-#include "Config.hpp"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/async.h"
@@ -25,12 +24,12 @@ using namespace nucleus;
 Logging *Logging::logger = nullptr; // Singleton model - sets the internal private member
 std::shared_ptr<spdlog::logger> Logging::mylog = nullptr;
 
-Logging::Logging(const std::string &name)
+Logging::Logging(const std::string& name, const std::string& log_file, const spdlog::level::level_enum log_level)
 {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::trace);
 
-    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(config::log_file, 1024*1024 * 20, 10);
+    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_file, 1024*1024 * 20, 10);
     file_sink->set_level(spdlog::level::trace);
 
     std::array<spdlog::sink_ptr, 2> sinks {console_sink, file_sink};
@@ -42,31 +41,33 @@ Logging::Logging(const std::string &name)
 
     spdlog::register_logger(mylog);
 
-    mylog->set_level(config::log_level);
+    mylog->set_level(log_level);
 
-    mylog->flush_on(spdlog::level::info);
+    mylog->flush_on(spdlog::level::debug);
     spdlog::flush_every(std::chrono::seconds(5));
 
     mylog->info("Logging has been initialised with name {} and loglevel {} and saved to {}",
-                name, spdlog::level::to_string_view(config::log_level), config::log_file);
-    mylog->debug("Logging is async using {} threads with {} slots and a DROP policy if out of slots. If missing log entries, adjust these settings",
-                 LOG_THREADS, LOG_SLOTS_K);
+                name, spdlog::level::to_string_view(log_level), log_file);
+    mylog->debug("Logging is async using {} threads with {} slots and a DROP policy if out of slots. "
+                 "If missing log entries, adjust these defines (recompile needed)", LOG_THREADS, LOG_SLOTS_K);
 
     // This line must be retained if using the Nucleus Open Source license.
-    mylog->info("Built with Nucleus. See https://axomem.io for more info, and follow us on Twitter @axomemio for updates");
+    mylog->info("Built with Nucleus. See https://github.com/axomem/nucleus for more info, "
+                "and follow us on Twitter @axomemio for updates");
     // The line above must be retained if using the Nucleus Open Source license.
 }
 
 Logging *
-Logging::init() {
+Logging::init(const std::string &name, const std::string& log_file,
+              const spdlog::level::level_enum log_level) {
     if (logger == nullptr) {
-        logger = new Logging("main");
+        logger = new Logging(name, log_file, log_level);
     }
     return logger;
-};
+}
 
 std::shared_ptr<spdlog::logger> &
 Logging::log() {
     return mylog;
-};
+}
 

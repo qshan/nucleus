@@ -38,7 +38,7 @@ namespace nucleus {
  * 3. **important** Return the router via `getRestServerRouter().setRouter(std::move(router));`
  *
  * @note If the router is not returned, the RestServer will not start and will fail with exception
- *
+ * @see Enhancements - https://github.com/axomem/nucleus/issues/56
  */
 class RestServerRouter {
 

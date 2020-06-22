@@ -73,7 +73,7 @@ RestServer::RestServer(std::unique_ptr<restinio::router::express_router_t<>> rou
 
 {
     Logging::log()->info("ReST Server starting at http://{}:{} with {} threads across {} CPUs",
-                         config::rest_address, config::rest_port, config::rest_threads,
+                         address_arg, port_arg, threads_arg,
                          std::thread::hardware_concurrency());
 
     restinio_control_thread = std::thread { [this, threads_arg] {

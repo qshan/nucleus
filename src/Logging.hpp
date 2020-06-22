@@ -42,9 +42,10 @@ class Nucleus;
  * Logging uses [fmt::format](https://fmt.dev/latest/index.html) for string formatting.
  *
  * ### Configuration
- * Configuration is managed by two Config items:
- * * **Config::log_file:** The path to the log file
- * * **Config::log_level:** The log level to use. Levels are `critical`, `error`, `warn`, `info`, `debug`, `trace`
+ * Configuration is managed by these Config items:
+ * * **log_name:** The label for the log file
+ * * **log_file:** The path to the log file
+ * * **log_level:** The log level to use. Levels are `critical`, `error`, `warn`, `info`, `debug`, `trace`
  *
  */
 
@@ -57,8 +58,10 @@ public:
     static std::shared_ptr<spdlog::logger> &log();
 
 private:
-    explicit Logging(const std::string &name); // hide constructor - use init for singleton
-    static Logging *init();
+    explicit Logging(const std::string &name, const std::string& log_file,
+                     const spdlog::level::level_enum log_level); // hide constructor - use init for singleton
+    static Logging *init(const std::string &name, const std::string& log_file,
+                         const spdlog::level::level_enum log_level);
 
     static Logging *logger;
     static std::shared_ptr<spdlog::logger> mylog;  // this is the

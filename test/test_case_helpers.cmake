@@ -24,12 +24,13 @@ function(test_case_start)
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TEST_OUT_DIR})
     execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory   ${TEST_OUT_DIR})
     message(STATUS "--------------------------------------------------------------------------------------------------")
+    set (TEST_SUBCASE_NUMBER 0 PARENT_SCOPE)
 endfunction()
 
 function(test_case_check)
     set(args ${ARGN})
     if (args)
-        set(sub_check_message "| sub-check: " "${args}" "|")
+        set(sub_check_message "| sub-check ${TEST_SUBCASE_NUMBER}: " "${args}" "|")
     endif()
 
     foreach(RESULT_ITEM ${TEST_CASE_RESULT})
@@ -43,6 +44,8 @@ function(test_case_check)
     message(STATUS "PASS: Test ${TEST_NAME} ${sub_check_message} ")
 
     set(TEST_CASE_RESULT 0 PARENT_SCOPE) # Reset it above
+    math(EXPR NEXT_TEST_SUBCASE_NUMBER "${TEST_SUBCASE_NUMBER} + 1")
+    set(TEST_SUBCASE_NUMBER ${NEXT_TEST_SUBCASE_NUMBER} PARENT_SCOPE)
     message(STATUS "--------------------------------------------------------------------------------------------------")
 
 endfunction()

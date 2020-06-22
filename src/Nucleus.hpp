@@ -29,6 +29,7 @@ namespace nucleus {
  * It also handles the Signal handling for responding to OS calls like CTRL-C (SIGINT) or daemon termination (SIGHALT)
  * ### Example
  * Automatic execution: `return Nucleus<MyApp>(argc, argv).Run();`
+ * @tparam T An instance of `AppManager<MyApp>`
  */
 template <class T>
 class Nucleus {
@@ -37,19 +38,24 @@ class Nucleus {
     static int signal_times;
 
 public:
+
     /**
-     * Start Nucleus using argc and argv typically from `main()` to configure the instance.
-     * @tparam T An instance of `AppManager<MyApp>`
+     * Start Nucleus using a pre-built instance of nucleus::config configure the instance.
      * @param argc Arg count
      * @param argv Arg string array
      */
-    Nucleus (int argc, char *argv[]) {
+    explicit Nucleus (const Config& config) : config(config) {}
 
-        executable_name = std::filesystem::path(argv[0]).filename();
+    /**
+     * Start Nucleus using argc and argv typically from `main()` to configure the instance.
+     * @param argc Arg count
+     * @param argv Arg string array
+     */
+    Nucleus (int argc, char *argv[]) : config{""} {
 
         // Load configuration manager first. Needed for log settings
         try {
-            nucleus::config::load_config(executable_name, argc, argv);
+            config.config_parse_args(argc, argv);
         } catch (const std::invalid_argument &exc) {
             configuration_error = exc.what();
         }
@@ -69,14 +75,14 @@ public:
         }
 
         // Load Logging Manager
-        Logging::init();
+        Logging::init(config.app_name, config.log_file, config.log_level);
         auto log = Logging::log();
 
-        log->info("The Nucleus engine is starting");
+        log->info("The Nucleus engine is starting for app {}", config.app_name);
 
         try {
 
-            auto app_manager = AppManager<T>();
+            auto app_manager = AppManager<T>(config);
 
             p_app_manager = &app_manager;
 
@@ -98,18 +104,17 @@ public:
             log->critical("Exception: General: {}", exc.what());
         }
 
-        log->info("Exiting Nucleus with exit status {}", exitCode);
+        log->info("Exiting {} with exit status {}", config.app_name, exitCode);
         return exitCode;
     }
 
 private:
 
-    std::string executable_name;
+    nucleus::Config config;
     std::string configuration_error;
 
+    /// Install CTRL-C handler to try exit gracefully.
     void set_signal_handlers() const {
-        // Install CTRL-C handler to try exit gracefully.
-        // TODO - install handlers for other signals, eg if running a daemon or windows service
 
     #ifndef _WIN32
         // TODO - store previous handler information and restore?
@@ -134,6 +139,7 @@ private:
     }
     #endif
 
+    /// Process a received signal from the OS, like SIGINT or SIGHALT
     static void process_signal (int signal) {
 
         signal_times++;
@@ -159,15 +165,16 @@ private:
 
     };
 
+    /// Print help message
     int print_help() const {
 
         std::stringstream usage;
-        usage << std::endl << "Usage: " << executable_name << " [OPTIONS]" << std::endl
+        usage << std::endl << "Usage: " << config.app_name << " [OPTIONS]" << std::endl
               << "Options:" << std::endl
               << "  -h --help                  This help information. See conf file for more details on arguments." << std::endl
-              << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << executable_name << ".pmem" << std::endl
+              << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << config.app_name << ".pmem" << std::endl
               << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
-              << "  --log_file=filename        Log file path and name. Default is ./" << executable_name << ".log" << std::endl
+              << "  --log_file=filename        Log file path and name. Default is ./" << config.app_name << ".log" << std::endl
               << "  --log_level=level          error, warn, info, debug, trace" << std::endl
               << "  --rest_address=localhost   ReST Server address in name or IP format (see conf for external access)" << std::endl
               << "  --rest_port=8080           ReST Server port number" << std::endl

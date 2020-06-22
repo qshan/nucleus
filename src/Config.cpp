@@ -14,57 +14,40 @@
 // along with this program; if not, see http://www.gnu.org/licenses/
 
 #include <iostream>
+#include <fstream>
 #include <regex>
-#include "ini.hpp"
+#include <functional>
+#include <filesystem>
 #include "Config.hpp"
-#include "Logging.hpp"
 
 // TODO - add further validation to provided values
 
-namespace nucleus::config {
-
-// declare globals
-spdlog::level::level_enum log_level;
-std::string log_file;
-size_t pool_main_size;
-std::string pool_main_file;
-
-unsigned short rest_port;
-std::string rest_address;
-size_t rest_threads;
-
-std::string condition_path;
+namespace nucleus {
 
 
-bool
-load_config(const std::string& executable_name_arg, int argc, char *argv[]) {
+Config::Config(const std::string& app_name) : app_name(app_name)
+{}
 
-    // These are default settings.
-    config::log_level = spdlog::level::debug;
-    config::log_file = fmt::format("./{}.log", executable_name_arg);
-    config::pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
-    config::pool_main_file = fmt::format("./{}.pmem", executable_name_arg);
+void
+Config::config_parse_args(int argc, char *argv[]) {
 
-    config::rest_port = 8080;
-    config::rest_address = "localhost";
-    config::rest_threads = 4;
+    if (argc == 0) { throw std::invalid_argument("Args must have at least 1 arg - the executable name"); }
 
-    // condition_path is empty by default
-
-    if (argc < 2) return false;
-
-    auto string_args = args_to_string(argc, argv);
-
-    if (ini_parse_string(string_args.c_str(), config::handler, nullptr) < 0) {
-        throw std::invalid_argument("Unable to parse configuration data. Check config file or command line args");
+    if (app_name.empty()) {
+        app_name = std::filesystem::path(argv[0]).filename();
     }
 
-    return true;
+    auto string_args = args_to_stringstream(argc, argv);
+
+    handler_t callback = [this](const std::string& section, const std::string& name, const std::string& value) {
+        return handler(section, name, value); };
+
+    ini_parse_stringstream(string_args, callback);
+
 }
 
-
-int
-handler(void* user, const char* section, const char* name, const char* value) {
+void
+Config::handler(const std::string& section, const std::string& name, const std::string& value) {
 
     bool matched = false;
 
@@ -79,48 +62,53 @@ handler(void* user, const char* section, const char* name, const char* value) {
 
     // If a config file has been specified, process that first
     if (check_match("","config_file")) {
-        ini_parse(value, config::handler, nullptr);
+        handler_t callback = [this](const std::string& section_arg, const std::string& name_arg,
+                                    const std::string& value_arg) {
+            return handler(section_arg, name_arg, value_arg); };
+        ini_parse_file(value, callback);
     }
 
-    if (check_match("","log_file")) { config::log_file = value; }
-    if (check_match("","log_level")) { config::log_level = spdlog::level::from_str(value); }
+    if (check_match("","log_file")) { log_file = value; }
 
-    if (check_match("","pool_main_file")) { config::pool_main_file = value; }
+    if (check_match("","log_level")) { log_level = spdlog::level::from_str(value); }
+
+    if (check_match("","pool_main_file")) { pool_main_file = value; }
 
     if (check_match("","pool_main_size")) {
-        config::pool_main_size = (size_t) std::stol(value) * 1024 * 1024;
+        pool_main_size = (size_t) std::stol(value) * 1024 * 1024;
         if (pool_main_size < 8 * 1024 * 1024) { // PMEMOBJ_MIN_POOL
             throw std::invalid_argument("Minimum pool size is 8MiB");
         }
     }
 
-    if (check_match("","rest_port")) {
-        auto temp_port = std::strtoul(value, nullptr,0);
-        if (temp_port > USHRT_MAX || temp_port > 65535 || temp_port == 0) {
-            throw std::invalid_argument("Given port is invalid. Should be 1 to 65535.");
-        }
-        config::rest_port = (unsigned short) temp_port;
-    }
-    if (check_match("","rest_address")) { config::rest_address = value;}
-    if (check_match("","rest_threads")) { config::rest_threads = std::stoi(value);}
+    if (check_match("","rest_dsiable")) { rest_disable = parse_bool(value);}
 
-    if (check_match("","condition_path")) { config::condition_path = value; }
+    if (check_match("","rest_port")) { rest_port = parse_ip_port(value);}
+
+    if (check_match("","rest_address")) { rest_address = value;}
+
+    if (check_match("","rest_threads")) { rest_threads = std::stoi(value);}
+
+
+    if (check_match("","condition_path")) { condition_path = value; }
 
     if (!matched){
-        std::string name_err = name;
-        throw std::invalid_argument("Unknown configuration parameter specified in conf file or command line: " + name_err);
+        throw std::invalid_argument("Unknown configuration parameter specified in conf file or command line: " + name);
     }
 
-    return matched;
 }
 
-std::string
-args_to_string(int argc, char *argv[] ) {
+std::stringstream
+Config::args_to_stringstream(int argc, char *argv[] ) {
+
     // convert args to a conf-file like string so we can process command line like file entries.
-    // Note: command line overrides file
-    std::string args;
-    for (int i = 1; i < argc; i++) {
+
+    std::stringstream args;
+
+    for (int i = 1; i < argc; i++) {  // we start at 1 as 0 is the exe name...
+
         std::string arg_part = std::regex_replace(argv[i], std::regex("^([-\\/]+)"), "");
+
         // check if the user asked for help
         if (arg_part[0] == 'h') {
             throw std::invalid_argument("HELP");
@@ -133,10 +121,99 @@ args_to_string(int argc, char *argv[] ) {
         }
 
         // Add to the string.
-        args += arg_part;
-        args += "\r\n";
+        args << arg_part << std::endl;
+
     }
     return args;
+}
+
+void
+Config::ini_parse_stringstream(std::stringstream& stream, const handler_t& callback) {
+
+    std::string line;
+
+    while(std::getline(stream, line,'\n')){
+
+        ltrim(line);
+        rtrim(line);
+
+        if (line.empty() || line.front() == '#' ) { // comment or empty
+            continue;
+        }
+
+        auto delim_pos = line.find('=');
+        if (delim_pos == std::string::npos) {
+            throw std::invalid_argument("Parsing error in config: missing equals sign in parameter: " + line);
+        }
+
+        std::string variable = line.substr(0, delim_pos);
+        rtrim(variable);
+
+        std::string value = delim_pos + 1 < line.length() ? line.substr(delim_pos + 1, line.length()-delim_pos) : "";
+        ltrim(value);
+
+        callback("", variable, value);
+
+    }
+
+}
+
+void
+Config::ini_parse_file(const std::string& filename, const handler_t& callback) {
+
+    std::stringstream buffer;
+
+    std::ifstream file( filename );
+
+    if (!file.is_open()) {
+        throw std::invalid_argument("Cannot open file " + filename + " error: " + strerror(errno));
+    }
+    buffer << file.rdbuf();
+    file.close();
+
+    ini_parse_stringstream(buffer, callback);
+
+}
+
+unsigned short
+Config::parse_ip_port(const std::string &port) {
+
+    auto err_msg = "Given port is invalid. Should be 1 to 65535.";
+
+    if (!std::regex_match(port, std::regex("[0-9]+"))) {
+        throw std::invalid_argument(err_msg );
+    }
+
+    auto temp_port = std::stol(port, nullptr,0);
+
+    if (temp_port > USHRT_MAX || temp_port > 65535 || temp_port == 0) {
+        throw std::invalid_argument(err_msg);
+    }
+
+    return (unsigned short) temp_port;
+
+}
+
+bool
+Config::parse_bool(const std::string &str_arg) {
+
+    auto str = str_arg;
+
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+
+    if (str == "1" || str == "TRUE" || str == "YES") {
+        return true;
+    } else if (str == "0" || str == "FALSE" || str == "NO") {
+        return false;
+    } else {
+        throw std::invalid_argument("Cannot parse '" + str_arg + "' to bool.");
+    }
+
+}
+
+std::string
+Config::to_string(bool bool_arg) {
+    return bool_arg ? "true" : "false";
 }
 
 
