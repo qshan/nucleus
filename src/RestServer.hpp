@@ -43,37 +43,48 @@ namespace nucleus {
 class RestServerRouter {
 
 public:
-    explicit RestServerRouter();
-    std::unique_ptr<restinio::router::express_router_t<>> getRouter();
-    void setRouter(std::unique_ptr<restinio::router::express_router_t<>>);
-    static RestServerRouter & getRestServerRouter();
+    explicit RestServerRouter(const CTX& ctx_arg);
+    using router_t = restinio::router::express_router_t<>;
+    using router_ptr_t = std::unique_ptr<router_t>;
+
+    router_ptr_t getRouter();
+    void setRouter(router_ptr_t);
 
 private:
-    using router_t = restinio::router::express_router_t<>;
-    std::unique_ptr<router_t> router = std::make_unique<router_t>();
+    CTX ctx;
+    router_ptr_t router = std::make_unique<router_t>();
 };
 /**
  * RestServer provides a ReST-ful interface to persistent applications.
+ * @see Enhancements - https://github.com/axomem/nucleus/issues/56
  */
 class RestServer {
 
 public:
-    explicit RestServer( std::unique_ptr<restinio::router::express_router_t<>> router,
+    explicit RestServer( const CTX& ctx_arg, RestServerRouter::router_ptr_t router,
                          const std::string& address = "localhost", unsigned short port = 80,
                          size_t threads = 4);
     ~RestServer();
     RestServer(const RestServer&) = delete;
     RestServer &operator=(const RestServer &) = delete;
 
+    std::string last_error() const;
+
 private:
+    CTX ctx;
 
     using my_traits_t = restinio::traits_t<
             restinio::asio_timer_manager_t,
             restinio::null_logger_t,
             restinio::router::express_router_t<>>;
+
     using my_server_t = restinio::http_server_t<my_traits_t>;
     my_server_t my_server;
-    std::thread restinio_control_thread;
+
+    restinio::on_pool_runner_t<restinio::http_server_t<my_traits_t>> runner;
+
+    std::string last_error_msg;
+
 };
 
 

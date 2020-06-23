@@ -28,15 +28,15 @@ template <class N>
 class PoolManager {
 
 public:
-    explicit PoolManager(const std::string &fileName_arg, const std::string &layout_arg, const size_t pool_main_size) :
-            file_name(fileName_arg) {
+    explicit PoolManager(const CTX& ctx_arg, const std::string &fileName_arg, const std::string &layout_arg, const size_t pool_main_size) :
+            ctx(ctx_arg), file_name(fileName_arg) {
 
-        Logging::log()->debug("PoolManager::() with pool file name {} and layout {}", file_name, layout_arg);
+        ctx->log->debug("PoolManager::() with pool file name {} and layout {}", file_name, layout_arg);
 
         if (std::filesystem::exists(std::filesystem::path(file_name))) {
             if (pmem::obj::pool<N>::check(file_name, layout_arg) == 1) {
 
-                Logging::log()->info("Opening existing pool {} with layout {}", file_name, layout_arg);
+                ctx->log->info("Opening existing pool {} with layout {}", file_name, layout_arg);
                 my_pool = pmem::obj::pool<N>::open(file_name, layout_arg);
 
             } else {
@@ -48,18 +48,18 @@ public:
 
         } else {
 
-                Logging::log()->info("Creating new pool {} with layout '{}' and size {}", file_name, layout_arg,
+                ctx->log->info("Creating new pool {} with layout '{}' and size {}", file_name, layout_arg,
                                      pool_main_size);
                 my_pool = pmem::obj::pool<N>::create(file_name, layout_arg, pool_main_size);
 
-                Logging::log()->info("Pool successfully created.");
-                Logging::log()->warn("Please remember this is an Alpha version of Nucleus");
+                ctx->log->info("Pool successfully created.");
+                ctx->log->warn("Please remember this is an Alpha version of Nucleus");
 
         }
 
     };
     ~PoolManager() {
-        Logging::log()->info("Closing persistent memory pool for file {}", file_name);
+        ctx->log->info("Closing persistent memory pool for file {}", file_name);
         my_pool.close();
     };
 
@@ -73,6 +73,7 @@ public:
     };
 
 private:
+    CTX ctx;
     pmem::obj::pool<N> my_pool;
     const std::string &file_name;
 

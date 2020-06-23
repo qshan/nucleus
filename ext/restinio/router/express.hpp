@@ -8,12 +8,15 @@
 
 #pragma once
 
-#include <restinio/request_handler.hpp>
+#include <restinio/router/impl/target_path_holder.hpp>
+#include <restinio/router/non_matched_request_handler.hpp>
+
 #include <restinio/optional.hpp>
 
 #include <restinio/path2regex/path2regex.hpp>
 
 #include <restinio/router/std_regex_engine.hpp>
+#include <restinio/router/method_matcher.hpp>
 
 #include <restinio/utils/from_string.hpp>
 #include <restinio/utils/percent_encoding.hpp>
@@ -287,11 +290,35 @@ class route_matcher_t
 			regex_t route_regex,
 			std::shared_ptr< std::string > named_params_buffer,
 			param_appender_sequence_t param_appender_sequence )
-			:	m_method{ method }
-			,	m_route_regex{ std::move( route_regex ) }
+			:	m_route_regex{ std::move( route_regex ) }
 			,	m_named_params_buffer{ std::move( named_params_buffer ) }
 			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
-		{}
+		{
+			assign( m_method_matcher, std::move(method) );
+		}
+
+		/*!
+		 * Creates matcher with a given parameters.
+		 *
+		 * This constructor is intended for cases where method_matcher is
+		 * specified as object of class derived from method_matcher_t.
+		 *
+		 * @since v.0.6.6
+		 */
+		template< typename Method_Matcher >
+		route_matcher_t(
+			Method_Matcher && method_matcher,
+			regex_t route_regex,
+			std::shared_ptr< std::string > named_params_buffer,
+			param_appender_sequence_t param_appender_sequence )
+			:	m_route_regex{ std::move( route_regex ) }
+			,	m_named_params_buffer{ std::move( named_params_buffer ) }
+			,	m_param_appender_sequence{ std::move( param_appender_sequence ) }
+		{
+			assign(
+					m_method_matcher,
+					std::forward<Method_Matcher>(method_matcher) );
+		}
 
 		route_matcher_t() = default;
 		route_matcher_t( route_matcher_t && ) = default;
@@ -299,12 +326,12 @@ class route_matcher_t
 		//! Try to match a given request target with this route.
 		bool
 		match_route(
-			string_view_t target_path,
+			target_path_holder_t & target_path,
 			route_params_t & parameters ) const
 		{
 			match_results_t matches;
 			if( Regex_Engine::try_match(
-					target_path,
+					target_path.view(),
 					m_route_regex,
 					matches ) )
 			{
@@ -312,8 +339,7 @@ class route_matcher_t
 
 				// Data for route_params_t initialization.
 
-				std::unique_ptr< char[] > captured_params{ new char[ target_path.size() ] };
-				std::memcpy( captured_params.get(), target_path.data(), target_path.size() );
+				auto captured_params = target_path.giveout_data();
 
 				const string_view_t match{
 					captured_params.get() + Regex_Engine::submatch_begin_pos( matches[0] ),
@@ -367,14 +393,16 @@ class route_matcher_t
 		inline bool
 		operator () (
 			const http_request_header_t & h,
+			target_path_holder_t & target_path,
 			route_params_t & parameters ) const
 		{
-			return m_method == h.method() && match_route( h.path(), parameters );
+			return m_method_matcher->match( h.method() ) &&
+					match_route( target_path, parameters );
 		}
 
 	private:
 		//! HTTP method to match.
-		http_method_id_t m_method;
+		buffered_matcher_holder_t m_method_matcher;
 
 		//! Regex of a given route.
 		regex_t m_route_regex;
@@ -396,13 +424,6 @@ using express_request_handler_t =
 		std::function< request_handling_status_t( request_handle_t, route_params_t ) >;
 
 //
-// express_unmatched_request_handler_t
-//
-
-using non_matched_request_handler_t =
-		std::function< request_handling_status_t( request_handle_t ) >;
-
-//
 // express_route_entry_t
 //
 
@@ -416,13 +437,17 @@ template < typename Regex_Engine = std_regex_engine_t>
 class express_route_entry_t
 {
 		using matcher_init_data_t =
-			path2regex::impl::route_regex_matcher_data_t< impl::route_params_appender_t, Regex_Engine >;
+			path2regex::impl::route_regex_matcher_data_t<
+					impl::route_params_appender_t,
+					Regex_Engine >;
+
+		template< typename Method_Matcher >
 		express_route_entry_t(
-			http_method_id_t method,
+			Method_Matcher && method_matcher,
 			matcher_init_data_t matcher_data,
 			express_request_handler_t handler )
 			:	m_matcher{
-					method,
+					std::forward<Method_Matcher>( method_matcher ),
 					std::move( matcher_data.m_regex ),
 					std::move( matcher_data.m_named_params_buffer ),
 					std::move( matcher_data.m_param_appender_sequence ) }
@@ -438,25 +463,27 @@ class express_route_entry_t
 		express_route_entry_t &
 		operator = ( express_route_entry_t && ) = default;
 
+		template< typename Method_Matcher >
 		express_route_entry_t(
-			http_method_id_t method,
+			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 			:	express_route_entry_t{
-					method,
+					std::forward<Method_Matcher>( method_matcher ),
 					path2regex::path2regex< impl::route_params_appender_t, Regex_Engine >(
 						route_path,
 						options ),
 					std::move( handler ) }
 		{}
 
+		template< typename Method_Matcher >
 		express_route_entry_t(
-			http_method_id_t method,
+			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			express_request_handler_t handler )
 			:	express_route_entry_t{
-					method,
+					std::forward<Method_Matcher>( method_matcher ),
 					route_path,
 					path2regex::options_t{},
 					std::move( handler ) }
@@ -464,28 +491,22 @@ class express_route_entry_t
 
 		//! Checks if request header matches entry,
 		//! and if so, set route params.
+		RESTINIO_NODISCARD
 		bool
-		match( const http_request_header_t & h, route_params_t & params ) const
+		match(
+			const http_request_header_t & h,
+			impl::target_path_holder_t & target_path,
+			route_params_t & params ) const
 		{
-			return m_matcher( h, params );
+			return m_matcher( h, target_path, params );
 		}
 
 		//! Calls a handler of given request with given params.
+		RESTINIO_NODISCARD
 		request_handling_status_t
 		handle( request_handle_t rh, route_params_t rp ) const
 		{
 			return m_handler( std::move( rh ), std::move( rp ) );
-		}
-
-		//! Try to match the entry and calls a handler with extracted params.
-		request_handling_status_t
-		try_to_handle( request_handle_t rh ) const
-		{
-			route_params_t params;
-			if( match( rh->header(), params ) )
-				return handle( std::move( rh ), std::move( params ) );
-
-			return request_rejected();
 		}
 
 	private:
@@ -519,13 +540,15 @@ class express_router_t
 		express_router_t() = default;
 		express_router_t( express_router_t && ) = default;
 
+		RESTINIO_NODISCARD
 		request_handling_status_t
 		operator () ( request_handle_t req ) const
 		{
+			impl::target_path_holder_t target_path{ req->header().path() };
 			route_params_t params;
 			for( const auto & entry : m_handlers )
 			{
-				if( entry.match( req->header(), params ) )
+				if( entry.match( req->header(), target_path, params ) )
 				{
 					return entry.handle( std::move( req ), std::move( params ) );
 				}
@@ -545,27 +568,33 @@ class express_router_t
 
 		//! Add handlers.
 		//! \{
+		template< typename Method_Matcher >
 		void
 		add_handler(
-			http_method_id_t method,
+			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			express_request_handler_t handler )
 		{
 			add_handler(
-				method,
+				std::forward<Method_Matcher>(method_matcher),
 				route_path,
 				path2regex::options_t{},
 				std::move( handler ) );
 		}
 
+		template< typename Method_Matcher >
 		void
 		add_handler(
-			http_method_id_t method,
+			Method_Matcher && method_matcher,
 			string_view_t route_path,
 			const path2regex::options_t & options,
 			express_request_handler_t handler )
 		{
-			m_handlers.emplace_back( method, route_path, options, std::move( handler ) );
+			m_handlers.emplace_back(
+					std::forward<Method_Matcher>(method_matcher),
+					route_path,
+					options,
+					std::move( handler ) );
 		}
 
 		void

@@ -26,16 +26,17 @@ namespace nucleus {
 
 
 Config::Config(const std::string& app_name) : app_name(app_name)
-{}
+{
+    if (app_name.empty()) {
+        throw std::invalid_argument("app_name cannot be empty");
+    }
+
+}
 
 void
 Config::config_parse_args(int argc, char *argv[]) {
 
     if (argc == 0) { throw std::invalid_argument("Args must have at least 1 arg - the executable name"); }
-
-    if (app_name.empty()) {
-        app_name = std::filesystem::path(argv[0]).filename();
-    }
 
     auto string_args = args_to_stringstream(argc, argv);
 

@@ -55,16 +55,14 @@ template<class T>
 friend class Nucleus;
 
 public:
-    static std::shared_ptr<spdlog::logger> &log();
+    explicit Logging(const std::string &name, const std::string& log_file,
+                     const spdlog::level::level_enum log_level);
+
+    const std::shared_ptr<spdlog::logger>& get_logger() const ;
 
 private:
-    explicit Logging(const std::string &name, const std::string& log_file,
-                     const spdlog::level::level_enum log_level); // hide constructor - use init for singleton
-    static Logging *init(const std::string &name, const std::string& log_file,
-                         const spdlog::level::level_enum log_level);
 
-    static Logging *logger;
-    static std::shared_ptr<spdlog::logger> mylog;  // this is the
+    std::shared_ptr<spdlog::logger> mylog;  // this is the logging instance
 
     Logging(const Logging &) = delete;  // hide copy constructor
     Logging &operator=(const Logging &) = delete; // hide assignment operator

@@ -31,7 +31,7 @@ class Config {
 
 public:
 
-    Config() = default;
+    Config() = delete;
     explicit Config(const std::string& app_name);
     virtual ~Config() = default;
 
@@ -44,10 +44,10 @@ public:
 
     // For logging
     spdlog::level::level_enum log_level = spdlog::level::debug;
-    std::string log_file = fmt::format("./{}.log", "nucleus");
+    std::string log_file = fmt::format("./{}.log", app_name);
 
     // For PoolManager - main pool file
-    std::string pool_main_file = fmt::format("./{}.pmem", "nucleus");
+    std::string pool_main_file = fmt::format("./{}.pmem", app_name);
     size_t pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
 
     // For ReSTServer

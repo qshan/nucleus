@@ -51,20 +51,20 @@ friend class Nucleus;
 
 public:
 
-    explicit AppManager(const Config& config) : config(config) {
-        Logging::log()->trace("Constructing AppManager for app {}", config.app_name);
+    explicit AppManager(const CTX& ctx_arg) : ctx(ctx_arg) {
+        ctx->log->trace("Constructing AppManager for app {}", ctx->config->app_name);
         auto app_pool = pool_manager.pool();
         if (app_pool.root()->app == nullptr) {
-            Logging::log()->debug("HelloWorld persistent object not yet initialized - persisting HelloWorld Object");
+            ctx->log->debug("App persistent object not yet initialized - persisting App Object");
             pmem::obj::transaction::run(app_pool, [this, &app_pool] {
-                app_pool.root()->app = pmem::obj::make_persistent<T>();
+                app_pool.root()->app = pmem::obj::make_persistent<T>(ctx);
                 app_pool.root()->app_state = AppState::NEW;
             });
         }
     };
 
     ~AppManager() {
-        Logging::log()->trace("AppManager is exiting");
+        ctx->log->trace("AppManager is exiting");
     };
 
     AppManager(const AppManager&)                = delete; // Copy
@@ -77,7 +77,9 @@ public:
      * This function blocks the thread until the the AppState is changed from RUNNING.
      */
     void Run() {
-        Logging::log()->debug("AppManager is opening Application. Current App State is {} ", GetAppStateName());
+        auto config = ctx->config;
+
+        ctx->log->info("AppManager is opening {}. Current App State is {} ", ctx->config->app_name, GetAppStateName());
 
         auto app = pool_manager.pool().root()->app;
 
@@ -87,66 +89,79 @@ public:
         }
 
         if (GetAppState() == nucleus::NEW) {
-            Logging::log()->debug("AppManager: App initializing after first persistence");
+            ctx->log->debug("AppManager: App initializing after first persistence");
             SetAppState(nucleus::INITIALIZING);
-            app->Initialize();
+            app->Initialize(ctx);
         }
 
         if (GetAppState() != nucleus::INITIALIZING && GetAppState() != nucleus::STOPPED ) {
-            Logging::log()->warn("AppManager: Abnormal App State detected."
+            ctx->log->warn("AppManager: Abnormal App State detected."
                                  "Starting App however application state may be compromised");
         }
 
         SetAppState(nucleus::STARTING);
-        RegisterRestRoutes();
-        app->Start();
 
-        Logging::log()->trace("AppManager is creating ReST Server. Disable ReST {}",
-                         Config::to_string(config.rest_disable));
+        app->Start(ctx);
 
-        std::unique_ptr<RestServer> rest_server(new RestServer(RestServerRouter::getRestServerRouter().getRouter(),
-                                                                  config.rest_address, config.rest_port,
-                                                                  config.rest_threads));
+        ctx->log->trace("AppManager is Preparing Rest Routes");
+
+        auto rest_server_router = RestServerRouter(ctx);
+        rest_server_router.setRouter(RegisterRestRoutes(app, std::move(rest_server_router.getRouter())));
+
+        ctx->log->trace("AppManager is creating ReST Server. Disable ReST {}",
+                         Config::to_string(config->rest_disable));
+
+        std::unique_ptr<RestServer> rest_server(new RestServer(ctx, rest_server_router.getRouter(),
+                                                                  config->rest_address, config->rest_port,
+                                                                  config->rest_threads));
 
         SetAppState(nucleus::RUNNING);
-        Logging::log()->debug("AppManager Entering Main thread run loop with App State {}", GetAppStateName());
+        ctx->log->debug("AppManager Entering Main thread run loop with App State {}", GetAppStateName());
 
-        Logging::log()->info("***");
-        Logging::log()->info("Server is running. Default site is "
-                             "http://{}:{}/api/v1/ready", config.rest_address, config.rest_port);
-        Logging::log()->info("Press CTRL-C once to shutdown normally. May require up to 3 presses "
-                             "in abnormal termination");
-        Logging::log()->info("***");
+        ctx->log->info("***");
+        ctx->log->info("Server is running for {}", ctx->config->app_name);
+        ctx->log->info("Press CTRL-C once to shutdown. May require up to 3 presses for abnormal termination");
+        ctx->log->info("Ping ReST URL is http://{}:{}/api/v1/ping", config->rest_address, config->rest_port);
+        ctx->log->info("***");
 
         while (GetAppState() == nucleus::RUNNING){
             // *** This holds overall run state **************************
-            std::this_thread::sleep_for(std::chrono::milliseconds{1000});
-            CheckConditionPathExists();
-        }
-        Logging::log()->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
 
-        Logging::log()->debug("Closing Rest Server");
+            std::this_thread::sleep_for(std::chrono::milliseconds{1000});
+
+            CheckConditionPathExists();
+
+            if (!rest_server->last_error().empty()) {
+                // Redo this as check function when ReST server moved to ctx
+                Exit(fmt::format("ReST Server has experienced an error: {}. Exiting",
+                                 rest_server->last_error()));
+            }
+
+        }
+        ctx->log->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
+
+        ctx->log->debug("Closing ReST Server");
         rest_server.reset(nullptr); // Reset unique ptr will close the server
 
         app->Stop();
         SetAppState(nucleus::STOPPED);
-        Logging::log()->info("AppManager Run now exiting with AppState {}", GetAppStateName());
+        ctx->log->info("AppManager Run now exiting with AppState {}", GetAppStateName());
 
     }
 
 
 private:
 
-    Config config;
+    std::shared_ptr<Context> ctx;
 
-    PoolManager<AppPool<T>> pool_manager {config.pool_main_file,
+    PoolManager<AppPool<T>> pool_manager {ctx, ctx->config->pool_main_file,
                                           fmt::format("{}__v{}", typeid(T).name(), T::layout_version),
-                                          config.pool_main_size};
+                                          ctx->config->pool_main_size};
 
     void SetAppState(AppState state) {
 
         pmem::obj::transaction::run(pool_manager.pool(), [&state, this] {
-            Logging::log()->trace("App State is being set to {} (previous state {})",
+            ctx->log->trace("App State is being set to {} (previous state {})",
                                   GetAppStateName(state), GetAppStateName());
             pool_manager.pool().root()->app_state = state;
         });
@@ -173,25 +188,24 @@ private:
      */
     void Exit(int signal) {
         // for Signal types - move back to private after setting up Nucleus class def
-        Logging::log()->debug("AppManager Exit CTRL SIGNAL Received: {}", signal);
+        ctx->log->debug("AppManager Exit CTRL SIGNAL Received: {}", signal);
         Exit("SIGNAL Received");
     }
 
     void Exit(const std::string &reason) {
-        Logging::log()->info("AppManager Exit requested. Current App State is {}. Reason {}",
+        ctx->log->info("AppManager Exit requested. Current App State is {}. Reason {}",
                              GetAppStateName(), reason);
         SetAppState(nucleus::EXITING);
     };
 
     void CheckConditionPathExists() {
-        if (!config.condition_path.empty() && !std::filesystem::exists(config.condition_path)) {
+        if (!ctx->config->condition_path.empty() && !std::filesystem::exists(ctx->config->condition_path)) {
                 Exit(fmt::format("Condition path is specified but does not or no longer exists."
-                                 " Path is {}", config.condition_path));
+                                 " Path is {}", ctx->config->condition_path));
         }
     }
 
-    void RegisterRestRoutes() {
-        auto router = RestServerRouter::getRestServerRouter().getRouter();
+    std::unique_ptr<RestServerRouter::router_t> RegisterRestRoutes(pmem::obj::persistent_ptr<T> app, std::unique_ptr<RestServerRouter::router_t> router) {
 
         router->http_get(
                 R"(/api/v1/ping)",
@@ -207,7 +221,10 @@ private:
 
 
         // return the router to the RestServer
-        RestServerRouter::getRestServerRouter().setRouter(std::move(router));
+
+        router = app->RegisterRestRoutes(std::move(router));
+
+        return router;
 
     }
 };

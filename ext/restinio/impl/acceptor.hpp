@@ -257,6 +257,10 @@ class acceptor_t final
 			}
 			catch( const std::exception & ex )
 			{
+				// Acceptor should be closes in the case of an error.
+				if( m_acceptor.is_open() )
+					m_acceptor.close();
+
 				m_logger.error( [&]() -> auto {
 					return fmt::format( "failed to start server on {}: {}",
 						ep,
@@ -368,8 +372,10 @@ class acceptor_t final
 			//! socket index in the pool of sockets.
 			std::size_t i )
 		{
+			auto incoming_socket = this->move_socket( i );
+
 			auto remote_endpoint =
-					this->socket( i ).lowest_layer().remote_endpoint();
+					incoming_socket.lowest_layer().remote_endpoint();
 
 			m_logger.trace( [&]{
 				return fmt::format(
@@ -379,7 +385,6 @@ class acceptor_t final
 
 			// Since v.0.5.1 the incoming connection must be
 			// inspected by IP-blocker.
-			auto incoming_socket = this->move_socket( i );
 			const auto inspection_result = this->inspect_incoming(
 					incoming_socket );
 
@@ -421,13 +426,14 @@ class acceptor_t final
 							"do_accept_current_connection.create_and_init_connection",
 							[&] {
 								// Create new connection handler.
+								// NOTE: since v.0.6.3 this method throws in
+								// the case of an error. Because of that there is
+								// no need to check the value returned.
 								auto conn = factory->create_new_connection(
 										std::move(sock), std::move(ep) );
 
-								// If connection handler was created,
-								// then start waiting for request message.
-								if( conn )
-									conn->init();
+								// Start waiting for request message.
+								conn->init();
 							} );
 				};
 

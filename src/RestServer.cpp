@@ -22,20 +22,20 @@ using namespace restinio;
 using namespace nucleus;
 
 
-RestServerRouter::RestServerRouter() {
+RestServerRouter::RestServerRouter(const CTX& ctx_arg) : ctx(ctx_arg) {
 
-    Logging::log()->trace("ReST Server configuring default routes");
+    ctx->log->trace("ReST Server configuring default routes");
 
     router->non_matched_request_handler(
             [](auto req){
                 return req->create_response(status_not_found()).connection_close().done();
             });
-    Logging::log()->trace("ReST Server default routes done");
+    ctx->log->trace("ReST Server default routes done");
 }
 
 std::unique_ptr<router::express_router_t<>>
 RestServerRouter::getRouter(){
-    Logging::log()->trace("RestServer GetRouter being called");
+    ctx->log->trace("RestServer GetRouter being called");
     assert(router != nullptr && "Unable to get Router since its already out for route population or server has started");
 
     return std::move(router);
@@ -43,25 +43,20 @@ RestServerRouter::getRouter(){
 
 void
 RestServerRouter::setRouter(std::unique_ptr<router::express_router_t<>> router_arg) {
-    Logging::log()->trace("RestServer SetRouter being called");
+    ctx->log->trace("RestServer SetRouter being called");
     assert(router == nullptr && "Unable to set Router since its already active. Check logic.");
 
     router = std::move(router_arg);
 }
 
-RestServerRouter &
-RestServerRouter::getRestServerRouter() {
-    static RestServerRouter singleton_instance;
-    return singleton_instance;
-}
 
 // --------------------
 // TODO - also need to catch 'std::system_error' bind: Address already in use here. ideally abort Nucleus?
 
-RestServer::RestServer(std::unique_ptr<restinio::router::express_router_t<>> router,
+RestServer::RestServer(const CTX& ctx_arg, std::unique_ptr<restinio::router::express_router_t<>> router,
                        const std::string& address_arg, unsigned short port_arg,
                        size_t threads_arg) :
-
+    ctx(ctx_arg),
     // This creates the server object but does not start it
     my_server { restinio::own_io_context(),
                 restinio::server_settings_t< my_traits_t >{}
@@ -69,27 +64,41 @@ RestServer::RestServer(std::unique_ptr<restinio::router::express_router_t<>> rou
                 .address( address_arg )
                 .separate_accept_and_create_connect(true)
                 .request_handler( std::move(router) )
-    }
+    },
+    runner{threads_arg, my_server}
 
-{
-    Logging::log()->info("ReST Server starting at http://{}:{} with {} threads across {} CPUs",
+    {
+
+    runner.start([&ctx_arg]() noexcept {ctx_arg->log->debug("ReSTServer() Server started OK");},
+                 [&ctx_arg, this ] (const std::exception_ptr &eptr) noexcept {
+                     try {
+                         if (eptr) {
+                             std::rethrow_exception(eptr);
+                         }
+                     } catch (const std::system_error& e) {
+                         last_error_msg = e.what();
+                         ctx_arg->log->warn("ReSTServer() starting error: {}", e.what());
+                     }
+                 });
+
+
+    ctx->log->info("ReST Server starting at http://{}:{} with {} threads across {} CPUs",
                          address_arg, port_arg, threads_arg,
                          std::thread::hardware_concurrency());
 
-    restinio_control_thread = std::thread { [this, threads_arg] {
-            restinio::run( restinio::on_thread_pool(threads_arg, restinio::skip_break_signal_handling(),
-                                                           my_server));
-        }
-    };
 
 }
 
 RestServer::~RestServer() {
 
-    Logging::log()->debug("RestServer is being shut down");
+    ctx->log->info("RestServer is being shut down");
 
-    restinio::initiate_shutdown(my_server);
-    restinio_control_thread.join();
-    Logging::log()->info("RestServer has shut down");
+    runner.stop();
+    runner.wait();
+
+    ctx->log->debug("RestServer has shut down");
 }
 
+std::string RestServer::last_error() const {
+    return last_error_msg;
+};

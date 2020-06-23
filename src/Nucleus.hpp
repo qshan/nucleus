@@ -44,18 +44,21 @@ public:
      * @param argc Arg count
      * @param argv Arg string array
      */
-    explicit Nucleus (const Config& config) : config(config) {}
+
+    explicit Nucleus (Config config) : config(std::make_shared<Config>(std::move(config))) {}
 
     /**
      * Start Nucleus using argc and argv typically from `main()` to configure the instance.
      * @param argc Arg count
      * @param argv Arg string array
      */
-    Nucleus (int argc, char *argv[]) : config{""} {
+
+    Nucleus (int argc, char *argv[]) :
+        config(std::make_shared<Config>(std::filesystem::path(argv[0]).filename())) {
 
         // Load configuration manager first. Needed for log settings
         try {
-            config.config_parse_args(argc, argv);
+            config->config_parse_args(argc, argv);
         } catch (const std::invalid_argument &exc) {
             configuration_error = exc.what();
         }
@@ -75,14 +78,17 @@ public:
         }
 
         // Load Logging Manager
-        Logging::init(config.app_name, config.log_file, config.log_level);
-        auto log = Logging::log();
+        logger = std::make_shared<Logging>(config->app_name, config->log_file, config->log_level);
 
-        log->info("The Nucleus engine is starting for app {}", config.app_name);
+        ctx = std::make_shared<Context>();
+        ctx->config = config;
+        ctx->log = logger->get_logger();
+
+        ctx->log->info("The Nucleus engine is starting for app {}", config->app_name);
 
         try {
 
-            auto app_manager = AppManager<T>(config);
+            auto app_manager = AppManager<T>(ctx);
 
             p_app_manager = &app_manager;
 
@@ -93,24 +99,27 @@ public:
             exitCode = EXIT_SUCCESS;
 
         } catch (const pmem::transaction_error &err) {
-            log->critical("Exception: pmem Transaction Error: {}", err.what());
+            ctx->log->critical("Exception: pmem Transaction Error: {}", err.what());
         } catch (const pmem::transaction_scope_error &tse) {
-            log->critical("Exception: pmem Transaction Scope Error: {} ",tse.what());
+            ctx->log->critical("Exception: pmem Transaction Scope Error: {} ",tse.what());
         } catch (const pmem::pool_error &pe) {
-            log->critical("Exception: pmem PoolManager Error: {}", pe.what());
-            log->info("Check pmem is mounted, space available, permissions are set, layout is correct label");
+            ctx->log->critical("Exception: pmem PoolManager Error: {}", pe.what());
+            ctx->log->info("Check pmem is mounted, space available, permissions are set, layout is correct label");
 
         } catch (const std::exception &exc) {
-            log->critical("Exception: General: {}", exc.what());
+            ctx->log->critical("Exception: General: {}", exc.what());
         }
 
-        log->info("Exiting {} with exit status {}", config.app_name, exitCode);
+        ctx->log->info("Exiting {} with exit status {}", config->app_name, exitCode);
         return exitCode;
     }
 
 private:
 
-    nucleus::Config config;
+    std::shared_ptr<nucleus::Context> ctx;
+    std::shared_ptr<nucleus::Config> config;
+    std::shared_ptr<Logging> logger;
+
     std::string configuration_error;
 
     /// Install CTRL-C handler to try exit gracefully.
@@ -147,13 +156,13 @@ private:
             try {
                 p_app_manager->Exit(signal);
             } catch (const std::exception &exc) {
-                Logging::log()->critical("Exception while attempting to request AppManager Exit {}", exc.what());
+                std::cerr << "Exception while attempting to request AppManager Exit: " <<  exc.what() << std::endl;
                 signal_times = 99;
             }
         }
 
         if (signal_times > 2) {
-            Logging::log()->critical("Received multiple interrupts. Restoring default handler. Press once more to exit");
+            std::cerr << "Received multiple interrupts. Restoring default handler. Press once more to exit" << std::endl;
             #ifndef _WIN32
                 struct sigaction default_action = {{SIG_DFL}};
                 sigaction(SIGINT, &default_action, nullptr);
@@ -169,12 +178,12 @@ private:
     int print_help() const {
 
         std::stringstream usage;
-        usage << std::endl << "Usage: " << config.app_name << " [OPTIONS]" << std::endl
+        usage << std::endl << "Usage: " << config->app_name << " [OPTIONS]" << std::endl
               << "Options:" << std::endl
               << "  -h --help                  This help information. See conf file for more details on arguments." << std::endl
-              << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << config.app_name << ".pmem" << std::endl
+              << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << config->app_name << ".pmem" << std::endl
               << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
-              << "  --log_file=filename        Log file path and name. Default is ./" << config.app_name << ".log" << std::endl
+              << "  --log_file=filename        Log file path and name. Default is ./" << config->app_name << ".log" << std::endl
               << "  --log_level=level          error, warn, info, debug, trace" << std::endl
               << "  --rest_address=localhost   ReST Server address in name or IP format (see conf for external access)" << std::endl
               << "  --rest_port=8080           ReST Server port number" << std::endl

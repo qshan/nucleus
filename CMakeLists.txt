@@ -129,6 +129,7 @@ set (NUCLEUS_INCLUDE_DIRS ./src)
 file(GLOB NUCLEUS_EXT_SOURCES  ./ext/*.cpp ./ext/spdlog/*.cpp ./ext/http_parser/http_parser.c)
 set (NUCLEUS_EXT_INCLUDE_DIRS  ./ext ./ext/http_parser)
 
+set (NUCLEUS_ALL_TARGETS "")
 
 function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
 
@@ -217,6 +218,8 @@ if (APP_NAME)
     include(cmake/install.cmake)
     include(cmake/package.cmake)
 
+    list(APPEND NUCLEUS_ALL_TARGETS ${APP_NAME})
+
 elseif(EXISTS "${CMAKE_SOURCE_DIR}/myapp/main.cpp")
 
     message (STATUS "Building MyApp from within tree" )
@@ -235,6 +238,8 @@ elseif(EXISTS "${CMAKE_SOURCE_DIR}/myapp/main.cpp")
     set(APP_INCLUDE_DIRS  ${APP_DIR})
 
     add_target("${APP_NAME}" "${APP_DIR}" "${APP_SOURCES}" "${APP_INCLUDE_DIRS}" "${APP_LIBRARIES}")
+
+    list(APPEND NUCLEUS_ALL_TARGETS ${APP_NAME})
 
     include(cmake/install.cmake)
     include(cmake/package.cmake)
@@ -260,6 +265,8 @@ if (BUILD_EXAMPLES)
 
         add_target("${APP_NAME}" "${APP_DIR}" "${APP_SOURCES}" "${APP_INCLUDE_DIRS}" "${APP_LIBRARIES}")
 
+        list(APPEND NUCLEUS_ALL_TARGETS ${APP_NAME})
+
     endforeach()
 
     # Set up install and package only for the last built app - mainly for testing
@@ -270,6 +277,8 @@ if (BUILD_EXAMPLES)
     if (NOT NUCLEUS_PACKAGE_INCLUDED)
         include(cmake/package.cmake)
     endif()
+
+    message(STATUS "MAKE CHECK targets: " "${NUCLEUS_ALL_TARGETS}")
 
 endif()
 
@@ -284,4 +293,11 @@ add_custom_target(analyze
 add_custom_target(docs
         COMMAND doxygen doc/main.Doxyfile.in
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+)
+
+add_custom_target(check
+        # message(STATUS "Building and Testing targets" "${NUCLEUS_ALL_TARGETS}")
+        # COMMAND ${CMAKE_COMMAND} --parallel --build .
+        COMMAND ${CMAKE_COMMAND} --build . --target test
+        DEPENDS ${NUCLEUS_ALL_TARGETS}
 )

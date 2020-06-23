@@ -33,6 +33,7 @@ test_case_check("Got usage message")
 # Unexpected parameter check
 execute_process(
         COMMAND ${TEST_EXE} -cnfig --asdf
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         OUTPUT_VARIABLE OUTPUT
         ERROR_VARIABLE ERROR_OUTPUT
@@ -52,6 +53,7 @@ test_case_check("Got usage message with unexpected parameter via STDERR")
 execute_process(
         COMMAND ${TEST_EXE}
         --config_file=/dev/null/doesntexist.conf
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         TIMEOUT 30
         RESULTS_VARIABLE TEST_CASE_RESULT
@@ -99,6 +101,7 @@ execute_process(
         --pool_main_size=10
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         TIMEOUT 60
         RESULTS_VARIABLE TEST_CASE_RESULT
@@ -113,6 +116,7 @@ execute_process(
         --pool_main_size=10
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         TIMEOUT 60
         RESULTS_VARIABLE TEST_CASE_RESULT
@@ -127,6 +131,7 @@ execute_process(
         --log_level=trace
         --pool_main_file=/pool_file.pmem
         --pool_main_size=10
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         TIMEOUT 60
         RESULTS_VARIABLE TEST_CASE_RESULT
@@ -141,6 +146,7 @@ execute_process(
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
         --pool_main_size=1
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         TIMEOUT 60
         RESULTS_VARIABLE TEST_CASE_RESULT
@@ -155,13 +161,15 @@ execute_process(
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
         --pool_main_size=10
+        --disable_rest
         --rest_port=100000
+        --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
         TIMEOUT 60
         RESULTS_VARIABLE TEST_CASE_RESULT
 )
 
 test_error_return(1)
-test_case_check("Invalid ReST Port")
+test_case_check("Check disable REST and check Invalid ReST Port")  # new test case? Check really not on when done
 
 test_case_end()

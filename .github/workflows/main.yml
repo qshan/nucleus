@@ -19,7 +19,7 @@ name: Build and Test
 # events but only for the master branch
 on:
   push:
-    branches: [ master, dev, integrate/thingbase, fixes/sonar, fixes/documentation ]
+    branches: [ master, dev ]
 
   # *** warning *** - be careful if using runners on own infra on public repos with public pull requests
   pull_request:

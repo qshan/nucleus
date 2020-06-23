@@ -16,6 +16,7 @@
 #ifndef MYAPP_H
 #define MYAPP_H
 
+#include <RestServer.hpp>
 #include "Platform.hpp"
 #include "Customers.hpp"
 
@@ -27,7 +28,7 @@ namespace nucleus::examples::subclass {
 class SubClass {
 
 public:
-    SubClass();            // this at pool creation or app reset. It does not run on each application start
+    explicit SubClass(const CTX& ctx);            // this at pool creation or app reset. It does not run on each application start
     ~SubClass();           // this happens when the class instance is being deleted from the pool. It is not called on app close.
 
     SubClass(const SubClass&)                = delete; // Copy
@@ -35,15 +36,20 @@ public:
     SubClass& operator= (const SubClass & ) = delete; // Copy Assign
     SubClass& operator= (SubClass && )      = delete; // Move assign
 
-    void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
-    void Start();       // this happens each time the applications runs
+    void Initialize(const CTX& ctx);  // this happens at object creation, typically to init downstream objects that rely on this obj
+    void Start(const CTX& ctx);       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
+
+    RestServerRouter::router_ptr_t RegisterRestRoutes ( RestServerRouter::router_ptr_t router);
 
     inline static const int layout_version = 0;
 
 private:
     // These are the persistent memory objects for this class.
-    pmem::obj::persistent_ptr<Customers> p_customers {pmem::obj::make_persistent<Customers>()};
+    pmem::obj::persistent_ptr<Customers> p_customers;
+
+    // Server Context
+    pmem::obj::experimental::v<CTX> ctx;
 
 };
 

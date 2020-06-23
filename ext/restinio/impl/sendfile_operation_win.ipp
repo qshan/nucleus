@@ -19,7 +19,7 @@ namespace impl
 namespace asio_details
 {
 
-#if ASIO_VERSION < 101300
+#if RESTINIO_ASIO_VERSION < 101300
 
 template<typename Socket >
 decltype(auto)
@@ -138,8 +138,10 @@ class sendfile_operation_runner_t final
 
 	private:
 		std::unique_ptr< char[] > m_buffer{ new char [ this->m_chunk_size ] };
-		asio_ns::windows::random_access_handle
-			m_file_handle{ this->m_socket.get_executor().context(), this->m_file_descriptor };
+		asio_ns::windows::random_access_handle m_file_handle{
+				asio_details::executor_or_context_from_socket(this->m_socket),
+				this->m_file_descriptor
+		};
 
 		auto
 		make_async_read_some_at_handler() noexcept

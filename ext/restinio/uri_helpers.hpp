@@ -179,6 +179,51 @@ get( const query_string_params_t & params, string_view_t key )
 namespace parse_query_traits
 {
 
+namespace details
+{
+
+/*!
+ * @brief Helper class to be reused in implementation of query-string
+ * parsing traits.
+ *
+ * Implements `find_next_separator` method that recongnizes `&` and
+ * `;` as `name=value` separators.
+ *
+ * @since v.0.6.5
+ */
+struct ampersand_and_semicolon_as_separators
+{
+	static string_view_t::size_type
+	find_next_separator(
+		string_view_t where,
+		string_view_t::size_type start_from ) noexcept
+	{
+		return where.find_first_of( "&;", start_from );
+	}
+};
+
+/*!
+ * @brief Helper class to be reused in implementation of query-string
+ * parsing traits.
+ *
+ * Implements `find_next_separator` method that recongnizes only `&`
+ * `name=value` separator.
+ *
+ * @since v.0.6.5
+ */
+struct ampersand_only_as_separators
+{
+	static string_view_t::size_type
+	find_next_separator(
+		string_view_t where,
+		string_view_t::size_type start_from ) noexcept
+	{
+		return where.find_first_of( '&', start_from );
+	}
+};
+
+} /* namespace details */
+
 /*!
  * @brief Traits for the default RESTinio parser for query string.
  *
@@ -196,12 +241,16 @@ namespace parse_query_traits
  *
  * @since v.0.4.9.1
  */
-using restinio_defaults = restinio::utils::restinio_default_unescape_traits;
+struct restinio_defaults
+	:	public restinio::utils::restinio_default_unescape_traits
+	,	public details::ampersand_and_semicolon_as_separators
+{};
 
 /*!
  * @brief Traits for parsing a query string in JavaScript-compatible mode.
  *
- * In that mode unexcaped asterisk is alowed.
+ * In that mode several non-percent-encoded characters are allowed:
+ * `-`, `.`, `~`, `_`, `*`, `!`, `'`, `(`, `)`
  *
  * Usage example:
  * @code
@@ -210,35 +259,146 @@ using restinio_defaults = restinio::utils::restinio_default_unescape_traits;
  *
  * @since v.0.4.9.1
  */
-using javascript_compatible = restinio::utils::javascript_compatible_unescape_traits;
+struct javascript_compatible
+	:	public restinio::utils::javascript_compatible_unescape_traits
+	,	public details::ampersand_and_semicolon_as_separators
+{};
+
+/*!
+ * @brief Traits for parsing a query string in
+ * application/x-www-form-urlencoded mode.
+ *
+ * In that mode:
+ *
+ * - `name=value` pairs can be concatenated only by `&`;
+ * - the following characters can only be used unescaped: `*` (0x2A), `-`
+ *   (0x2D), `.` (0x2E), `_` (0x5F), `0`..`9` (0x30..0x39), `A`..`Z`
+ *   (0x41..0x5A), `a`..`z` (0x61..0x7A);
+ * - space character (0x20) should be replaced by + (0x2B);
+ * - *all other characters should be represented as percent-encoded*.
+ *
+ * Reference for more details: https://url.spec.whatwg.org/#concept-urlencoded-byte-serializer
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::parse_query<restinio::parse_query_traits::x_www_form_urlencoded>("name=A*");
+ * @endcode
+ *
+ * @since v.0.6.5
+ */
+struct x_www_form_urlencoded
+	:	public restinio::utils::x_www_form_urlencoded_unescape_traits
+	,	public details::ampersand_only_as_separators
+{};
+
+/*!
+ * @brief Traits for parsing a query string in a very relaxed mode.
+ *
+ * In that mode all characters described in that rule from
+ * [RCF3986](https://tools.ietf.org/html/rfc3986) can be used as unexceped:
+@verbatim
+query         = *( pchar / "/" / "?" )
+pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+reserved      = gen-delims / sub-delims
+gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
+                 / "*" / "+" / "," / ";" / "="
+@endverbatim
+ *
+ * Additionaly this traits allows to use unexcaped space character.
+ *
+ * Note that despite that fact that symbols like `#`, `+`, `=` and `&` can be
+ * used in non-percent-encoded form they play special role and are interpreted
+ * special way. So such symbols should be percent-encoded if they are used as
+ * part of name or value in query string.
+ *
+ * Only ampersand (`&`) can be used as `name=value` pairs separator.
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::parse_query<restinio::parse_query_traits::relaxed>("a=(&b=)&c=[&d=]&e=!&f=,&g=;");
+ * @endcode
+ *
+ * @since v.0.6.5
+ */
+struct relaxed
+	:	public restinio::utils::relaxed_unescape_traits
+	,	public details::ampersand_only_as_separators
+{};
 
 } /* namespace parse_query_traits */
 
-//! Parse query key-value parts.
 /*!
-	Since v.0.4.9 this function correctly handles the following cases:
+ * @brief Type that indicates a failure of an attempt of query-string parsing.
+ *
+ * @since v.0.6.5
+ */
+class parse_query_failure_t
+{
+	//! Description of a failure.
+	std::string m_description;
 
-	- presence of tag (web beacon) in URI. For example, when URI looks like
-	`http://example.com/resource?tag`. In that case value of the tag (web
-	beacon) can be obtained via query_string_params_t::tag() method.
-   References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
-	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
-	- usage of `;` instead of `&` as parameter separator.
+public:
+	parse_query_failure_t( std::string description )
+		:	m_description{ std::move(description) }
+	{}
+	parse_query_failure_t(
+		utils::unescape_percent_encoding_failure_t && failure )
+		:	m_description{ failure.giveout_description() }
+	{}
 
-	Since v.0.4.9.1 this function can be parametrized by parser traits. For
-	example:
-	@code
-	auto result = restinio::parse_query<restinio::parse_query_traits::javascript_compatible>("name=A*");
-	@endcode
-*/
-template< typename Parse_Traits = parse_query_traits::restinio_defaults >
-inline query_string_params_t
-parse_query(
+	//! Get a reference to the description of the failure.
+	RESTINIO_NODISCARD
+	const std::string &
+	description() const noexcept { return m_description; }
+
+	//! Get out the value of the description of the failure.
+	/*!
+	 * This method is intended for cases when this description should be move
+	 * elsewhere (to another object like parse_query_failure_t or to some
+	 * exception-like object).
+	 */
+	RESTINIO_NODISCARD
+	std::string
+	giveout_description() noexcept { return m_description; }
+};
+
+/*!
+ * @brief Helper function for parsing query string.
+ *
+ * Unlike parse_query() function the try_parse_query() doesn't throw if
+ * some unsupported character sequence is found.
+ *
+ * @note
+ * Parsing traits should be specified explicitly.
+ *
+ * Usage example:
+ * @code
+ * auto result = restinio::try_parse_query<
+ * 		restinio::parse_query_traits::javascript_compatible>("name=A*&flags=!");
+ * if(!result) {
+ * 	std::cerr << "Unable to parse query-string: " << result.error().description() << std::endl;
+ * }
+ * else {
+ * 	const restinio::query_string_params_t & params = *result;
+ * 	...
+ * }
+ * @endcode
+ *
+ * @attention
+ * This function is not noexcept and can throw on other types of
+ * failures (like unability to allocate a memory).
+ *
+ * @since v.0.6.5
+ */
+template< typename Parse_Traits >
+RESTINIO_NODISCARD
+expected_t< query_string_params_t, parse_query_failure_t >
+try_parse_query(
 	//! Query part of the request target.
 	string_view_t original_query_string )
 {
-	constexpr const string_view_t separators{ "&;", 2u };
-
 	std::unique_ptr< char[] > data_buffer;
 	query_string_params_t::parameters_container_t parameters;
 
@@ -271,49 +431,59 @@ parse_query(
 				// Tag can be the only item in query string.
 				if( pos != 0u )
 					// The query string has illegal format.
-					throw exception_t{
-						fmt::format(
-							"invalid format of key-value pairs in query_string: {}, "
-							"no '=' symbol starting from position {}",
-							original_query_string,
-							pos ) };
+					return make_unexpected( parse_query_failure_t{
+							fmt::format(
+								"invalid format of key-value pairs in query_string, "
+								"no '=' symbol starting from position {}",
+								pos )
+						} );
 				else
 				{
 					// Query string contains only tag (web beacon).
-					const auto tag_size =
-							utils::inplace_unescape_percent_encoding< Parse_Traits >(
+					auto tag_unescape_result =
+							utils::try_inplace_unescape_percent_encoding< Parse_Traits >(
 									&data_buffer[ pos ],
 									end_pos - pos );
+					if( !tag_unescape_result )
+						return make_unexpected( parse_query_failure_t{
+								std::move(tag_unescape_result.error())
+							} );
 
 					const string_view_t tag = work_query_string.substr(
-							pos, tag_size );
+							pos, *tag_unescape_result );
 
 					return query_string_params_t{ std::move( data_buffer ), tag };
 				}
 			}
 
 			const auto eq_pos_next = eq_pos + 1u;
-			auto separator_pos = work_query_string.find_first_of(
-					separators, eq_pos_next );
+			auto separator_pos = Parse_Traits::find_next_separator(
+					work_query_string, eq_pos_next );
 			if( string_view_t::npos == separator_pos )
 				separator_pos = work_query_string.size();
 
 			// Handle next pair of parameters found.
-			string_view_t key{
-					&data_buffer[ pos ],
-					utils::inplace_unescape_percent_encoding< Parse_Traits >(
+			auto key_unescape_result =
+					utils::try_inplace_unescape_percent_encoding< Parse_Traits >(
 							&data_buffer[ pos ],
-							eq_pos - pos )
-			};
+							eq_pos - pos );
+			if( !key_unescape_result )
+				return make_unexpected( parse_query_failure_t{
+						std::move(key_unescape_result.error())
+					} );
 
-			string_view_t value{
-					&data_buffer[ eq_pos_next ],
-					utils::inplace_unescape_percent_encoding< Parse_Traits >(
+			auto value_unescape_result =
+					utils::try_inplace_unescape_percent_encoding< Parse_Traits >(
 							&data_buffer[ eq_pos_next ],
-							separator_pos - eq_pos_next )
-			};
+							separator_pos - eq_pos_next );
+			if( !value_unescape_result )
+				return make_unexpected( parse_query_failure_t{
+						std::move(value_unescape_result.error())
+					} );
 
-			parameters.emplace_back( std::move( key ), std::move( value ) );
+			parameters.emplace_back(
+					string_view_t{ &data_buffer[ pos ], *key_unescape_result },
+					string_view_t{ &data_buffer[ eq_pos_next ], *value_unescape_result } );
 
 			pos = separator_pos + 1u;
 		}
@@ -323,6 +493,37 @@ parse_query(
 			std::move( data_buffer ),
 			std::move( parameters )
 	};
+}
+
+//! Parse query key-value parts.
+/*!
+	Since v.0.4.9 this function correctly handles the following cases:
+
+	- presence of tag (web beacon) in URI. For example, when URI looks like
+	`http://example.com/resource?tag`. In that case value of the tag (web
+	beacon) can be obtained via query_string_params_t::tag() method.
+   References: [web beacon](https://en.wikipedia.org/wiki/Web_beacon) and
+	[query-string-tracking](https://en.wikipedia.org/wiki/Query_string#Tracking);
+	- usage of `;` instead of `&` as parameter separator.
+
+	Since v.0.4.9.1 this function can be parametrized by parser traits. For
+	example:
+	@code
+	auto result = restinio::parse_query<restinio::parse_query_traits::javascript_compatible>("name=A*");
+	@endcode
+*/
+template< typename Parse_Traits = parse_query_traits::restinio_defaults >
+RESTINIO_NODISCARD
+query_string_params_t
+parse_query(
+	//! Query part of the request target.
+	string_view_t original_query_string )
+{
+	auto r = try_parse_query< Parse_Traits >( original_query_string );
+	if( !r )
+		throw exception_t{ std::move(r.error().giveout_description()) };
+
+	return std::move(*r);
 }
 
 } /* namespace restinio */

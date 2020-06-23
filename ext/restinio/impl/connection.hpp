@@ -27,6 +27,7 @@
 #include <restinio/impl/sendfile_operation.hpp>
 
 #include <restinio/utils/impl/safe_uint_truncate.hpp>
+#include <restinio/utils/at_scope_exit.hpp>
 
 namespace restinio
 {
@@ -1101,8 +1102,15 @@ class connection_t final
 					// NOTE: since v.0.6.0 this lambda is noexcept
 					(const asio_ns::error_code & ec, file_size_t written ) mutable noexcept
 					{
-						// Reset sendfile operation context.
-						RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+						// NOTE: op_ctx should be reset just before return from
+						// that lambda. We can't call reset() until the end of
+						// the lambda because lambda object itself will be
+						// destroyed.
+						auto op_ctx_reseter = restinio::utils::at_scope_exit(
+								[&op_ctx] {
+									// Reset sendfile operation context.
+									RESTINIO_ENSURE_NOEXCEPT_CALL( op_ctx.reset() );
+								} );
 
 						if( !ec )
 						{
@@ -1592,36 +1600,26 @@ class connection_factory_t
 			,	m_logger{ *(m_connection_settings->m_logger ) }
 		{}
 
+		// NOTE: since v.0.6.3 it returns non-empty
+		// shared_ptr<connection_t<Traits>> or anexception is thrown in
+		// the case of an error.
 		auto
 		create_new_connection(
 			stream_socket_t socket,
 			endpoint_t remote_endpoint )
 		{
 			using connection_type_t = connection_t< Traits >;
-			std::shared_ptr< connection_type_t > result;
-			try
-			{
-				{
-					socket_options_t options{ socket.lowest_layer() };
-					(*m_socket_options_setter)( options );
-				}
 
-				result = std::make_shared< connection_type_t >(
-					m_connection_id_counter++,
-					std::move( socket ),
-					m_connection_settings,
-					std::move( remote_endpoint ) );
-			}
-			catch( const std::exception & ex )
 			{
-				m_logger.error( [&]{
-					return fmt::format(
-						"failed to create connection: {}",
-						ex.what() );
-				} );
+				socket_options_t options{ socket.lowest_layer() };
+				(*m_socket_options_setter)( options );
 			}
 
-			return result;
+			return std::make_shared< connection_type_t >(
+				m_connection_id_counter++,
+				std::move( socket ),
+				m_connection_settings,
+				std::move( remote_endpoint ) );
 		}
 
 	private:

@@ -45,11 +45,26 @@
 #include <libpmemobj++/container/concurrent_hash_map.hpp>
 #include <libpmemobj++/container/string.hpp>
 #include <libpmemobj++/utils.hpp>
+#include <libpmemobj++/experimental/v.hpp>
 
 // Nucleus common includes
 #include "Logging.hpp"
 #include "Config.hpp"
 #include "Utilities.hpp"
+
+namespace nucleus {
+
+struct Context {
+
+public:
+    std::shared_ptr<Config> config;
+    std::shared_ptr<spdlog::logger> log;
+
+};
+
+using CTX = std::shared_ptr<Context>;
+
+}
 
 namespace nucleus::exceptions {
 

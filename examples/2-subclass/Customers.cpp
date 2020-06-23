@@ -14,7 +14,6 @@
 // along with this program; if not, see http://www.gnu.org/licenses/
 
 #include "Customers.hpp"
-#include "RestServer.hpp"
 
 using namespace nucleus;
 using namespace nucleus::examples::subclass;
@@ -27,24 +26,19 @@ Customer::Customer(const std::string& name_arg, const std::string& city_arg, int
     p_city(make_persistent<pmem::obj::string>(city_arg)),
     order_count(order_count_arg) {
 
-    Logging::log()->debug("Customer Persistent Constructor called with {} {} {}",
-                          p_name->c_str(), p_city->c_str(), order_count);
-
 }
 
 Customer::~Customer() {
-    Logging::log()->debug("Customer Persistent Destructor called for {}", p_name->c_str());
 }
 
-Customers::Customers()
-    : p_customer_list{make_persistent<pmem::obj::vector<Customer>>()}
+Customers::Customers(const CTX& ctx_arg)
 {
-    Logging::log()->debug("Customers Persistent Constructor called ");
+    ctx_arg->log->debug("Customers Persistent Constructor called");
 }
 
 Customers::~Customers()
 {
-    Logging::log()->debug("Customers Persistent Destructor called");
+    ctx.get()->log->debug("Customers Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
     pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<pmem::obj::vector<Customer>>(p_customer_list);
@@ -52,10 +46,12 @@ Customers::~Customers()
 }
 
 void
-Customers::Initialize()
+Customers::Initialize(const CTX& ctx_arg)
 {
+    ctx = ctx_arg;
+    
     // Initialize any child objects here
-    Logging::log()->trace("Customers is initializing");
+    ctx.get()->log->trace("Customers is initializing");
 
     // Add sample customers
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
@@ -70,12 +66,18 @@ Customers::Initialize()
 }
 
 void
-Customers::Start(){
-    Logging::log()->debug("Customers is starting");
+Customers::Start(const CTX& ctx_arg) {
+    if (ctx.get() == nullptr) {
+        ctx = ctx_arg;
+    }
+    ctx.get()->log->debug("Customers is starting");
 
     // App::init(this); RUNTIME App instance should be called here, if needed
 
-    auto router = RestServerRouter::getRestServerRouter().getRouter();
+}
+
+RestServerRouter::router_ptr_t
+Customers::RegisterRestRoutes ( RestServerRouter::router_ptr_t router) {
 
     router->http_get(
         R"(/api/v1/app/customers)",
@@ -103,7 +105,7 @@ Customers::Start(){
         R"(/api/v1/app/customers)",
         [this](auto req, auto params) {
 
-            Logging::log()->trace("HelloWorld adding new customer");
+            ctx.get()->log->trace("HelloWorld adding new customer");
 
             auto j_req = json::parse(req->body());
             auto pop = pmem::obj::pool_by_pptr(p_customer_list);
@@ -121,13 +123,9 @@ Customers::Start(){
         }
     );
 
-
     // TODO - Add other routes for getting single customer, adding new customers, deleting customers etc.
 
-    // return the router to the RestServer
-    RestServerRouter::getRestServerRouter().setRouter(std::move(router));
-
-    // App::init(this); RUNTIME App instance should be called here, if needed
+    return router;
 
 }
 
@@ -135,6 +133,6 @@ void
 Customers::Stop()
 {
     // if you create any volatile objects, delete them here
-    Logging::log()->trace("Customers is stopping");
+    ctx.get()->log->trace("Customers is stopping");
 
 }

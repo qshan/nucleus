@@ -16,6 +16,7 @@
 #ifndef MYAPP_H
 #define MYAPP_H
 
+#include <RestServer.hpp>
 #include "Platform.hpp"
 
 namespace nucleus::examples::helloworld {
@@ -27,7 +28,7 @@ namespace nucleus::examples::helloworld {
 class HelloWorld {
 
 public:
-    HelloWorld();            // this at pool creation or app reset. It does not run on each application start
+    explicit HelloWorld(const CTX& ctx);            // this at pool creation or app reset. It does not run on each application start
     ~HelloWorld();           // this happens when the class instance is being deleted from the pool. It is not called on app close.
 
     HelloWorld(const HelloWorld&)                = delete; // Copy
@@ -35,9 +36,11 @@ public:
     HelloWorld& operator= (const HelloWorld & ) = delete; // Copy Assign
     HelloWorld& operator= (HelloWorld && )      = delete; // Move assign
 
-    void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
-    void Start();       // this happens each time the applications runs
-    void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
+    void Initialize(const CTX& ctx);  // this happens at object creation, typically to init downstream objects that rely on this obj
+    void Start(const CTX& ctx);       // this happens each time the applications runs
+    void Stop();                // this happens when the app is shutting down. Note there is no runtime destructor!
+
+    RestServerRouter::router_ptr_t RegisterRestRoutes ( RestServerRouter::router_ptr_t router);
 
     inline static const int layout_version = 0;
 
@@ -46,6 +49,8 @@ private:
     pmem::obj::persistent_ptr<pmem::obj::string> p_message {pmem::obj::make_persistent<pmem::obj::string>("Hello World")};
     pmem::obj::p<int> p_update_count {0};
 
+    // Server Context
+    pmem::obj::experimental::v<CTX> ctx;
 };
 
 

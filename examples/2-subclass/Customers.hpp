@@ -17,6 +17,7 @@
 #define CUSTOMER_H
 #include "Platform.hpp"
 #include <string>
+#include <RestServer.hpp>
 
 namespace nucleus::examples::subclass {
 
@@ -34,10 +35,7 @@ friend Customers;
 public:
     explicit Customer(const std::string& name_arg = "", const std::string& city_arg = "", int order_count_arg = 0);
     ~Customer();
-    // Customer(const Customer&)                = delete; // Copy is used by vector
-    // Customer(Customer&&)                     = delete; // Move is used by vector
-    // Customer& operator= ( const Customer & ) = delete; // Copy Assign kept otherwise copy implicitly deleted
-    // Customer& operator= ( Customer && )      = delete; // Move assign kept otherwise copy implicitly deleted
+    // Copy and move constructors are used by Vector. Do not delete.
 
 private:
     pmem::obj::persistent_ptr<pmem::obj::string> p_name;
@@ -52,7 +50,7 @@ private:
 class Customers {
 
 public:
-    Customers();            // this at pool creation or app reset. It does not run on each application start
+    explicit Customers(const CTX& ctx);            // this at pool creation or app reset. It does not run on each application start
     ~Customers();           // this happens when the class is being deleted from the pool. It is not called on app close.
 
     Customers(const Customers&)                = delete; // Copy
@@ -62,13 +60,21 @@ public:
 
     // TODO - add functions here for managing customers. ReST interfaces should bind to these.
 
-    void Initialize();  // this happens at object creation, typically to init downstream objects that rely on this obj
-    void Start();       // this happens each time the applications runs
+    void Initialize(const CTX& ctx);  // this happens at object creation, typically to init downstream objects that rely on this obj
+    void Start(const CTX& ctx);       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
+
+    RestServerRouter::router_ptr_t RegisterRestRoutes ( RestServerRouter::router_ptr_t router);
 
 private:
     // These are the persistent memory objects for this class
-    pmem::obj::persistent_ptr<pmem::obj::vector<Customer>> p_customer_list;
+    pmem::obj::persistent_ptr<pmem::obj::vector<Customer>> p_customer_list {
+        pmem::obj::make_persistent<pmem::obj::vector<Customer>>()
+    };
+
+    // Server Context
+    pmem::obj::experimental::v<CTX> ctx;
+
 };
 
 

@@ -50,111 +50,78 @@ ENDIF ()
 IF (RESTINIO_FIND_DEPS)
 	message(STATUS "RESTinio dependencies are included with `find_package()`")
 
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE unofficial::http_parser::http_parser)
+	IF (RESTINIO_FMT_HEADER_ONLY)
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE fmt::fmt-header-only)
+	ELSE ()
+		TARGET_LINK_LIBRARIES(${RESTINIO} PUBLIC fmt::fmt)
+	ENDIF ()
+
+	IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE http_parser)
+	ELSE ()
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE unofficial::http_parser::http_parser)
+	ENDIF ()
 ELSE ()
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only>)
-	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:unofficial::http_parser::http_parser>)
+	IF (RESTINIO_FMT_HEADER_ONLY)
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt-header-only>)
+	ELSE ()
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:fmt::fmt>)
+	ENDIF ()
+
+	IF (RESTINIO_USE_EXTERNAL_HTTP_PARSER)
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:http_parser>)
+	ELSE ()
+		TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE $<BUILD_INTERFACE:unofficial::http_parser::http_parser>)
+	ENDIF ()
 ENDIF ()
+
+IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::expected-lite)
+	TARGET_COMPILE_DEFINITIONS(${RESTINIO}
+		INTERFACE -DRESTINIO_EXTERNAL_EXPECTED_LITE)
+ENDIF()
+
+IF (RESTINIO_USE_EXTERNAL_OPTIONAL_LITE)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::optional-lite)
+	TARGET_COMPILE_DEFINITIONS(${RESTINIO}
+		INTERFACE -DRESTINIO_EXTERNAL_OPTIONAL_LITE)
+ENDIF()
+
+IF (RESTINIO_USE_EXTERNAL_STRING_VIEW_LITE)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::string-view-lite)
+	TARGET_COMPILE_DEFINITIONS(${RESTINIO}
+		INTERFACE -DRESTINIO_EXTERNAL_STRING_VIEW_LITE)
+ENDIF()
+
+IF (RESTINIO_USE_EXTERNAL_VARIANT_LITE)
+	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE nonstd::variant-lite)
+	TARGET_COMPILE_DEFINITIONS(${RESTINIO}
+		INTERFACE -DRESTINIO_EXTERNAL_VARIANT_LITE)
+ENDIF()
 
 IF ( NOT (RESTINIO_USE_BOOST_ASIO STREQUAL "none") )
 	TARGET_LINK_LIBRARIES(${RESTINIO} INTERFACE ${Boost_SYSTEM_LIBRARY} )
 ENDIF ()
 
-SET(RESTINIO_HEADERS_ALL
-	all.hpp
-	asio_include.hpp
-	asio_timer_manager.hpp
-	buffers.hpp
-	cast_to.hpp
-	common_types.hpp
-	compiler_features.hpp
-	connection_state_listener.hpp
-	exception.hpp
-	http_headers.hpp
-	http_server.hpp
-	http_server_run.hpp
-	ip_blocker.hpp
-	message_builders.hpp
-	null_logger.hpp
-	null_timer_manager.hpp
-	optional.hpp
-	os.hpp
-	ostream_logger.hpp
-	request_handler.hpp
-	sendfile_defs_default.hpp
-	sendfile_defs_posix.hpp
-	sendfile_defs_win.hpp
-	sendfile.hpp
-	settings.hpp
-	string_view.hpp
-	tcp_connection_ctx_base.hpp
-	timer_common.hpp
-	tls.hpp
-	traits.hpp
-	uri_helpers.hpp
-	value_or.hpp
-	variant.hpp
-	version.hpp
-	tls_fwd.hpp
-	impl/acceptor.hpp
-	impl/connection_base.hpp
-	impl/connection.hpp
-	impl/connection_settings.hpp
-	impl/executor_wrapper.hpp
-	impl/fixed_buffer.hpp
-	impl/header_helpers.hpp
-	impl/include_fmtlib.hpp
-	impl/ioctx_on_thread_pool.hpp
-	impl/os_posix.ipp
-	impl/os_unknown.ipp
-	impl/os_win.ipp
-	impl/parser_callbacks.ipp
-	impl/write_group_output_ctx.hpp
-	impl/response_coordinator.hpp
-	impl/sendfile_operation_default.ipp
-	impl/sendfile_operation.hpp
-	impl/sendfile_operation_posix.ipp
-	impl/sendfile_operation_win.ipp
-	impl/tls_socket.hpp
-	impl/to_lower_lut.ipp
+FILE(GLOB_RECURSE RESTINIO_HEADERS_ALL RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.?pp)
 
-	path2regex/path2regex.hpp
+# If *_lite library is used as external dependency then the corresponding
+# 3rd-party file should be removed.
+IF (RESTINIO_USE_EXTERNAL_EXPECTED_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/expected-lite/expected.hpp)
+ENDIF()
 
-	router/boost_regex_engine.hpp
-	router/express.hpp
-	router/pcre2_regex_engine.hpp
-	router/pcre_regex_engine.hpp
-	router/std_regex_engine.hpp
+IF (RESTINIO_USE_EXTERNAL_OPTIONAL_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/optional-lite/optional.hpp)
+ENDIF()
 
-	so5/so_timer_manager.hpp
+IF (RESTINIO_USE_EXTERNAL_STRING_VIEW_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/string-view-lite/string_view.hpp)
+ENDIF()
 
-	third_party/optional-lite/optional.hpp
-	third_party/string-view-lite/string_view.hpp
-	third_party/variant-lite/variant.hpp
-
-	transforms/zlib.hpp
-
-	utils/base64.hpp
-	utils/base64_lut.ipp
-	utils/from_string_details.ipp
-	utils/from_string.hpp
-	utils/percent_encoding.hpp
-	utils/sha1.hpp
-	utils/suppress_exceptions.hpp
-
-	utils/impl/bitops.hpp
-	utils/impl/safe_uint_truncate.hpp
-
-	websocket/message.hpp
-	websocket/websocket.hpp
-
-	websocket/impl/utf8.hpp
-	websocket/impl/ws_connection_base.hpp
-	websocket/impl/ws_connection.hpp
-	websocket/impl/ws_parser.hpp
-	websocket/impl/ws_protocol_validator.hpp
-	)
+IF (RESTINIO_USE_EXTERNAL_VARIANT_LITE)
+	list(REMOVE_ITEM RESTINIO_HEADERS_ALL third_party/variant-lite/variant.hpp)
+ENDIF()
 
 IF (RESTINIO_INSTALL)
 	include(GNUInstallDirs)

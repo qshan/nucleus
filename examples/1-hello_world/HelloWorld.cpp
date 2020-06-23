@@ -22,14 +22,14 @@ using namespace nucleus::examples::helloworld;
 using nlohmann::json;
 using namespace pmem::obj;
 
-HelloWorld::HelloWorld()
+HelloWorld::HelloWorld(const CTX& ctx)
 {
-    Logging::log()->debug("HelloWorld Persistent Constructor called");
+    ctx->log->debug("HelloWorld Persistent Constructor called. App name is {}", ctx->config->app_name);
 }
 
 HelloWorld::~HelloWorld()
 {
-    Logging::log()->debug("HelloWorld Persistent Destructor called");
+    ctx.get()->log->debug("HelloWorld Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_message);
     pmem::obj::transaction::run(pop, [this] {
                 delete_persistent<pmem::obj::string>(p_message);
@@ -37,21 +37,26 @@ HelloWorld::~HelloWorld()
 }
 
 void
-HelloWorld::Initialize()
+HelloWorld::Initialize(const CTX& ctx_arg)
 {
+    ctx = ctx_arg;
     // Initialize any child objects here
-    Logging::log()->trace("HelloWorld is initializing");
+    ctx.get()->log->trace("HelloWorld is initializing");
 
 }
 
 void
-HelloWorld::Start(){
+HelloWorld::Start(const CTX& ctx_arg) {
+    if (ctx.get() == nullptr) {
+        ctx = ctx_arg;
+    }
+    ctx.get()->log->debug("HelloWorld is starting");
+}
 
-    Logging::log()->debug("HelloWorld is starting");
+RestServerRouter::router_ptr_t
+HelloWorld::RegisterRestRoutes ( RestServerRouter::router_ptr_t router) {
 
     // Map the APIS
-
-    auto router = RestServerRouter::getRestServerRouter().getRouter();
 
     router->http_get(
             R"(/api/v1/app/message)",
@@ -72,7 +77,7 @@ HelloWorld::Start(){
 
                 auto j_req = json::parse(req->body());
                 std::string message_value = j_req["value"];
-                Logging::log()->trace("HelloWorld Message is being set to {}.", message_value);
+                ctx.get()->log->trace("HelloWorld Message is being set to {}.", message_value);
                 auto pop = pmem::obj::pool_by_pptr(p_message);
                 pmem::obj::transaction::run(pop, [this, &message_value] {
                     p_message->assign(message_value);
@@ -89,10 +94,7 @@ HelloWorld::Start(){
                         .done();
             });
 
-    // return the router to the RestServer
-    RestServerRouter::getRestServerRouter().setRouter(std::move(router));
-
-    // App::init(this); RUNTIME App instance should be called here, if needed
+    return router;
 
 }
 
@@ -100,6 +102,6 @@ void
 HelloWorld::Stop()
 {
     // if you create any volatile objects, delete them here
-    Logging::log()->trace("HelloWorld is stopping");
+    ctx.get()->log->trace("HelloWorld is stopping");
 
 }

@@ -21,9 +21,6 @@
 
 using namespace nucleus;
 
-Logging *Logging::logger = nullptr; // Singleton model - sets the internal private member
-std::shared_ptr<spdlog::logger> Logging::mylog = nullptr;
-
 Logging::Logging(const std::string& name, const std::string& log_file, const spdlog::level::level_enum log_level)
 {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -57,17 +54,8 @@ Logging::Logging(const std::string& name, const std::string& log_file, const spd
     // The line above must be retained if using the Nucleus Open Source license.
 }
 
-Logging *
-Logging::init(const std::string &name, const std::string& log_file,
-              const spdlog::level::level_enum log_level) {
-    if (logger == nullptr) {
-        logger = new Logging(name, log_file, log_level);
-    }
-    return logger;
-}
-
-std::shared_ptr<spdlog::logger> &
-Logging::log() {
+const std::shared_ptr<spdlog::logger> &
+Logging::get_logger() const {
     return mylog;
 }
 
