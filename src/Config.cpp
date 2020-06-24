@@ -82,7 +82,7 @@ Config::handler(const std::string& section, const std::string& name, const std::
         }
     }
 
-    if (check_match("","rest_dsiable")) { rest_disable = parse_bool(value);}
+    if (check_match("","rest_disable")) { rest_disable = parse_bool(value);}
 
     if (check_match("","rest_port")) { rest_port = parse_ip_port(value);}
 

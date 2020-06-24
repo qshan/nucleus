@@ -282,8 +282,10 @@ if (BUILD_EXAMPLES)
 
 endif()
 
+# Run test twice to try resolve https://github.com/axomem/nucleus/issues/58
 add_custom_target(analyze
     COMMAND util/sonar-build-wrapper.sh
+    COMMAND ${CMAKE_COMMAND} --build build --target test
     COMMAND ${CMAKE_COMMAND} --build build --target test
     COMMAND util/sonar-run.sh
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

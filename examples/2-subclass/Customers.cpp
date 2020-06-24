@@ -86,7 +86,7 @@ Customers::RegisterRestRoutes ( RestServerRouter::router_ptr_t router) {
             json j = "{}"_json;
             j["data"]["customers"] = "[]"_json;
 
-            for (auto &it : *p_customer_list) {
+            for (const auto &it : *p_customer_list) {
                 json c = "{}"_json;
                 c["name"] = it.p_name->c_str();
                 c["city"] = it.p_city->c_str();

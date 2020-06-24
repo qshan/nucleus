@@ -161,7 +161,6 @@ execute_process(
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
         --pool_main_size=10
-        --disable_rest
         --rest_port=100000
         --condition_path=/tmp/thisfileshouldnotexist
         COMMAND_ECHO STDOUT
@@ -171,5 +170,24 @@ execute_process(
 
 test_error_return(1)
 test_case_check("Check disable REST and check Invalid ReST Port")  # new test case? Check really not on when done
+
+execute_process(
+        COMMAND ${TEST_EXE}
+        --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
+        --log_level=trace
+        --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
+        --pool_main_size=10
+        --rest_disable=true
+        --rest_disable=0
+        --rest_disable=unknown
+        --condition_path=/tmp/thisfileshouldnotexist
+        COMMAND_ECHO STDOUT
+        TIMEOUT 60
+        RESULTS_VARIABLE TEST_CASE_RESULT
+)
+
+test_error_return(1)
+test_case_check("Check disable REST invalid option")  # new test case? Check really not on when done
+
 
 test_case_end()
