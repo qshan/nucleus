@@ -101,6 +101,8 @@ public:
 
         SetAppState(nucleus::STARTING);
 
+        ctx->log->trace("AppManager is calling app->Start()");
+
         app->Start(ctx);
 
         ctx->log->trace("AppManager is Preparing Rest Routes");
@@ -116,28 +118,25 @@ public:
                                                                   config->rest_threads));
 
         SetAppState(nucleus::RUNNING);
-        ctx->log->debug("AppManager Entering Main thread run loop with App State {}", GetAppStateName());
 
-        ctx->log->info("***");
-        ctx->log->info("Server is running for {}", ctx->config->app_name);
-        ctx->log->info("Press CTRL-C once to shutdown. May require up to 3 presses for abnormal termination");
-        ctx->log->info("Ping ReST URL is http://{}:{}/api/v1/ping", config->rest_address, config->rest_port);
-        ctx->log->info("***");
+        ctx->log->info("*** Server is running for {}", ctx->config->app_name);
+        ctx->log->info("*** Press CTRL-C once to shutdown. "
+                            "May require up to 3 presses for abnormal termination");
 
+        // *** This Loop holds overall run state on main thread **************************
         while (GetAppState() == nucleus::RUNNING){
-            // *** This holds overall run state **************************
-
-            std::this_thread::sleep_for(std::chrono::milliseconds{1000});
-
-            CheckConditionPathExists();
 
             if (!rest_server->last_error().empty()) {
-                // Redo this as check function when ReST server moved to ctx
                 Exit(fmt::format("ReST Server has experienced an error: {}. Exiting",
                                  rest_server->last_error()));
             }
 
+            CheckConditionPathExists(); // File based run lock
+
+            std::this_thread::sleep_for(std::chrono::milliseconds{1000});
+
         }
+
         ctx->log->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
 
         ctx->log->debug("Closing ReST Server");
@@ -160,11 +159,12 @@ private:
 
     void SetAppState(AppState state) {
 
+        ctx->log->trace("App State is being set to {} (previous state {})", GetAppStateName(state), GetAppStateName());
+
         pmem::obj::transaction::run(pool_manager.pool(), [&state, this] {
-            ctx->log->trace("App State is being set to {} (previous state {})",
-                                  GetAppStateName(state), GetAppStateName());
             pool_manager.pool().root()->app_state = state;
         });
+
     }
 
     AppState GetAppState()
@@ -219,11 +219,10 @@ private:
                             .done();
                 });
 
-
-        // return the router to the RestServer
-
+        // Register downstream routes
         router = app->RegisterRestRoutes(std::move(router));
 
+        // return the router to the RestServer
         return router;
 
     }

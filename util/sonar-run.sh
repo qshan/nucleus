@@ -9,7 +9,7 @@ if [ -z "$sonar_login" ]; then
 
   if [ "$#" -ne 1 ]; then
       echo "Sonar Password not found in python keyring and not found on the command line, so exiting"
-      echo "Use python -m keyring set sonar login"
+      echo "Use python3 -m keyring -b keyrings.alt.file.PlaintextKeyring get sonar login"
       exit 1
   else
       sonar_login="$1"

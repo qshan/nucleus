@@ -67,25 +67,31 @@ RestServer::RestServer(const CTX& ctx_arg, std::unique_ptr<restinio::router::exp
     },
     runner{threads_arg, my_server}
 
-    {
+{
+    // future for ReST server exception
+    std::promise<void> run_promise;
+    auto run_future = run_promise.get_future();
 
-    runner.start([&ctx_arg]() noexcept {ctx_arg->log->debug("ReSTServer() Server started OK");},
-                 [&ctx_arg, this ] (const std::exception_ptr &eptr) noexcept {
-                     try {
-                         if (eptr) {
-                             std::rethrow_exception(eptr);
-                         }
-                     } catch (const std::system_error& e) {
-                         last_error_msg = e.what();
-                         ctx_arg->log->warn("ReSTServer() starting error: {}", e.what());
-                     }
-                 });
+    // Start the server
+    runner.start(
+        [&run_promise]() noexcept {
+            run_promise.set_value();
+        },
+        [&run_promise](std::exception_ptr ex) noexcept {
+            run_promise.set_exception(std::move(ex));
+        }
+    );
 
+    try {
+        run_future.get();
+        ctx->log->debug("ReST Server started with {} threads across {} CPUs",
+                       threads_arg,std::thread::hardware_concurrency());
+        ctx->log->info("*** Ping ReST URL is http://{}:{}/api/v1/ping", address_arg, port_arg);
 
-    ctx->log->info("ReST Server starting at http://{}:{} with {} threads across {} CPUs",
-                         address_arg, port_arg, threads_arg,
-                         std::thread::hardware_concurrency());
-
+    } catch (const std::system_error& e) {
+        last_error_msg = e.what();
+        ctx_arg->log->critical("ReSTServer() starting error: {}", e.what());
+    }
 
 }
 

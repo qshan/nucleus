@@ -36,7 +36,7 @@ public:
         if (std::filesystem::exists(std::filesystem::path(file_name))) {
             if (pmem::obj::pool<N>::check(file_name, layout_arg) == 1) {
 
-                ctx->log->info("Opening existing pool {} with layout {}", file_name, layout_arg);
+                ctx->log->debug("Opening existing pool {} with layout {}", file_name, layout_arg);
                 my_pool = pmem::obj::pool<N>::open(file_name, layout_arg);
 
             } else {
@@ -59,7 +59,7 @@ public:
 
     };
     ~PoolManager() {
-        ctx->log->info("Closing persistent memory pool for file {}", file_name);
+        ctx->log->debug("Closing persistent memory pool for file {}", file_name);
         my_pool.close();
     };
 

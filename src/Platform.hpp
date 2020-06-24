@@ -52,14 +52,17 @@
 #include "Config.hpp"
 #include "Utilities.hpp"
 
+
 namespace nucleus {
+
+class Auth; // fwd declaration
 
 struct Context {
 
 public:
     std::shared_ptr<Config> config;
     std::shared_ptr<spdlog::logger> log;
-
+    std::shared_ptr<Auth> auth;
 };
 
 using CTX = std::shared_ptr<Context>;

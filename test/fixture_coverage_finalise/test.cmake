@@ -10,6 +10,7 @@ IF(TEST_COVERAGE_ENABLED)
         execute_process(COMMAND ${TEST_CASE_DIR}/run_gcov.sh
                         WORKING_DIRECTORY ${TEST_COVERAGE_DIR}
                         COMMAND_ECHO STDOUT
+
                         RESULT_VARIABLE TEST_CASE_RESULT)
 
         message(STATUS "Coverage executed in ${TEST_COVERAGE_DIR}")
