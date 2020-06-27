@@ -14,66 +14,43 @@
 // along with this program; if not, see http://www.gnu.org/licenses/
 
 #include "RestServer.hpp"
-#include "restinio/all.hpp"
-#include "json.hpp"
+#include <regex>
+#include <typeinfo>  // still needed for typeid
 
 using nlohmann::json;
 using namespace restinio;
-using namespace nucleus;
 
 
-RestServerRouter::RestServerRouter(const CTX& ctx_arg) : ctx(ctx_arg) {
+namespace nucleus {
 
-    ctx->log->trace("ReST Server configuring default routes");
+RestServer::RestServer(const CTX& ctx_arg, const std::string& address_arg, unsigned short port_arg, size_t threads_arg) :
+        ctx(ctx_arg), address(address_arg), port(port_arg), threads(threads_arg)
+{
 
-    router->non_matched_request_handler(
-            [](auto req){
-                return req->create_response(status_not_found()).connection_close().done();
-            });
-    ctx->log->trace("ReST Server default routes done");
-}
+    ctx->log->trace("Rest Server is constructing");
 
-std::unique_ptr<router::express_router_t<>>
-RestServerRouter::getRouter(){
-    ctx->log->trace("RestServer GetRouter being called");
-    assert(router != nullptr && "Unable to get Router since its already out for route population or server has started");
+    RegisterDefaultRoutes();
 
-    return std::move(router);
 }
 
 void
-RestServerRouter::setRouter(std::unique_ptr<router::express_router_t<>> router_arg) {
-    ctx->log->trace("RestServer SetRouter being called");
-    assert(router == nullptr && "Unable to set Router since its already active. Check logic.");
+RestServer::Start() {
 
-    router = std::move(router_arg);
-}
-
-
-// --------------------
-// TODO - also need to catch 'std::system_error' bind: Address already in use here. ideally abort Nucleus?
-
-RestServer::RestServer(const CTX& ctx_arg, std::unique_ptr<restinio::router::express_router_t<>> router,
-                       const std::string& address_arg, unsigned short port_arg,
-                       size_t threads_arg) :
-    ctx(ctx_arg),
-    // This creates the server object but does not start it
-    my_server { restinio::own_io_context(),
+    server = std::make_unique<server_t> ( restinio::own_io_context(),
                 restinio::server_settings_t< my_traits_t >{}
-                .port( port_arg )
-                .address( address_arg )
+                .port( port )
+                .address( address )
                 .separate_accept_and_create_connect(true)
-                .request_handler( std::move(router) )
-    },
-    runner{threads_arg, my_server}
+                .request_handler( std::move(router)));
 
-{
-    // future for ReST server exception
+    runner = std::make_unique<runner_t>(threads, *server);
+
+    // future for ReST server start exception
     std::promise<void> run_promise;
     auto run_future = run_promise.get_future();
 
     // Start the server
-    runner.start(
+    runner->start(
         [&run_promise]() noexcept {
             run_promise.set_value();
         },
@@ -85,26 +62,156 @@ RestServer::RestServer(const CTX& ctx_arg, std::unique_ptr<restinio::router::exp
     try {
         run_future.get();
         ctx->log->debug("ReST Server started with {} threads across {} CPUs",
-                       threads_arg,std::thread::hardware_concurrency());
-        ctx->log->info("*** Ping ReST URL is http://{}:{}/api/v1/ping", address_arg, port_arg);
+                       threads,std::thread::hardware_concurrency());
+        ctx->log->info("*** Ping ReST URL is http://{}:{}/api/v1/ping", address, port);
 
     } catch (const std::system_error& e) {
-        last_error_msg = e.what();
-        ctx_arg->log->critical("ReSTServer() starting error: {}", e.what());
+        m_last_error = e.what();
+        ctx->log->critical("ReSTServer() starting error: {}", e.what());
     }
+
 
 }
 
-RestServer::~RestServer() {
+void
+RestServer::Stop() {
 
     ctx->log->info("RestServer is being shut down");
 
-    runner.stop();
-    runner.wait();
+    runner->stop();
+    runner->wait();
 
     ctx->log->debug("RestServer has shut down");
 }
 
+RestServer::~RestServer() {
+    ctx->log->debug("RestServer is closing");
+}
+
 std::string RestServer::last_error() const {
-    return last_error_msg;
-};
+    return m_last_error;
+}
+
+void RestServer::RegisterDefaultRoutes() {
+
+    ctx->log->trace("ReST Server configuring default routes");
+
+    router->non_matched_request_handler([](auto req){
+        // Retuns a 404 if route not found
+        return req->create_response(status_not_found()).connection_close().done();
+
+    });
+
+    ctx->log->trace("ReST Server default routes done");
+
+}
+
+void
+RestServer::RegisterRoute(restinio::http_method_id_t method,
+                          const std::string& route_path,
+                          route_callback_t callback) {
+    RouteOptions options;
+    RegisterRoute(method, route_path, options, callback);
+}
+
+void
+RestServer::RegisterRoute(restinio::http_method_id_t method,
+                          const std::string& route_path,
+                          RouteOptions options,
+                          route_callback_t callback) {
+
+    ctx->log->debug("RestServer registering route {} {}", method.c_str(),  route_path);
+
+    router->add_handler(method, route_path,
+                        [this, callback, options](const restinio::request_handle_t &req,
+                                                const restinio::router::route_params_t &params) {
+
+        // Note - we are taking a deliberate copy of callback & options here, otherwise we lose the ref
+        // when the calling function exits. Could use std::copy?
+
+        return Request(req, params, callback, options);
+
+    });
+
+}
+
+restinio::request_handling_status_t
+RestServer::Request(const restinio::request_handle_t &req,
+                    const restinio::router::route_params_t &params,
+                    route_callback_t callback,
+                    const RouteOptions& options) {
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
+    RequestStart(req, options, start);
+
+    // Json response object
+    nlohmann::json res = "{}"_json;
+    res["response"] = "{}"_json;
+
+    restinio::http_status_line_t status;
+
+    try {
+
+        ctx->log->trace("Calling callback");
+        status = callback(req, params, res);
+        ctx->log->trace("Back from callback. Status is {}", status.status_code().raw_code());
+
+    } catch ( const std::exception &exc) {
+
+        status = restinio::status_internal_server_error();
+        res["response"]["reason"] = fmt::format("Server error: {} ({})", exc.what(), typeid(exc).name());
+
+    }
+
+    RequestEnd(req, options, start, res, status);
+
+    // return the response;
+    return req->create_response(status)
+            .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
+            .set_body( res.dump())
+            .done();
+
+}
+
+void RestServer::RequestStart(const restinio::request_handle_t &req,
+                              const RouteOptions& options,
+                              std::chrono::time_point<std::chrono::high_resolution_clock>& start) {
+
+        start = std::chrono::high_resolution_clock::now();
+
+        if (ctx->config->log_level == spdlog::level::trace) {
+
+            // Log headers for debugging
+            std::stringstream headers;
+            for(const auto & it : req->header()) {headers << it.name() << ":" << it.value() << "|";}
+
+            ctx->log->trace("RESTAPI START: {} || {} || {}", req->remote_endpoint(), headers.str(), req->body());
+        }
+}
+
+void
+RestServer::RequestEnd(const restinio::request_handle_t &req,
+                       const RouteOptions& options,
+                       const std::chrono::time_point<std::chrono::high_resolution_clock>& start,
+                       const json& res,
+                       const restinio::http_status_line_t& status) {
+
+    auto path = (std::string) req->header().path();
+
+    auto log_level = status.status_code() == restinio::status_internal_server_error().status_code() ? spdlog::level::err : options.log_level;
+
+    // Calculate response time
+    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
+    auto elapsed_ms = (long) std::round(elapsed.count() * 1000);
+
+    // Log request
+    std::string log_msg = res["response"].contains("reason") ? res["response"]["reason"] : "OK";
+
+    // Add separate logger - https://github.com/axomem/nucleus/issues/62
+    ctx->log->log(log_level, "{} {}__{}  {} {}?{} {} {} {}", req->remote_endpoint(),
+                  req->header().method(), path, req->header().query(),
+                  status.status_code().raw_code(), elapsed_ms, log_msg);
+
+}
+
+}

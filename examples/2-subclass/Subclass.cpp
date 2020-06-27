@@ -64,9 +64,3 @@ SubClass::Stop()
 
 }
 
-RestServerRouter::router_ptr_t
-SubClass::RegisterRestRoutes ( RestServerRouter::router_ptr_t router) {
-
-    return p_customers->RegisterRestRoutes(std::move(router));
-
-}

@@ -18,7 +18,7 @@
 
 #include "Platform.hpp"
 #include "AppManager.hpp"
-#include "Auth.hpp"
+#include "RestServer.hpp"
 
 #include <sstream>
 #include <filesystem>
@@ -87,9 +87,10 @@ public:
         logger = std::make_shared<Logging>(config->app_name, config->log_file, config->log_level);
         ctx->log = logger->get_logger();
 
-        // Load auth manager
-        auth = std::make_shared<Auth>(ctx);
-        ctx->auth = auth;
+        // Load rest server
+        rest_server = std::make_shared<RestServer>(ctx, config->rest_address, config->rest_port,
+                                                        config->rest_threads);
+        ctx->rest_server = rest_server;
 
         ctx->log->info("The Nucleus engine is starting for app {}", config->app_name);
 
@@ -126,7 +127,7 @@ private:
     std::shared_ptr<nucleus::Context> ctx;
     std::shared_ptr<nucleus::Config> config;
     std::shared_ptr<Logging> logger;
-    std::shared_ptr<Auth> auth;
+    std::shared_ptr<RestServer> rest_server;
 
     std::string configuration_error;
 

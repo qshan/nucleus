@@ -56,13 +56,14 @@
 namespace nucleus {
 
 class Auth; // fwd declaration
+class RestServer; // fwd declaration
 
-struct Context {
-
+class Context {
+// should we make this a vector with a common base? Or keep simple?
 public:
     std::shared_ptr<Config> config;
     std::shared_ptr<spdlog::logger> log;
-    std::shared_ptr<Auth> auth;
+    std::shared_ptr<RestServer> rest_server;
 };
 
 using CTX = std::shared_ptr<Context>;

@@ -64,8 +64,6 @@ public:
     void Start(const CTX& ctx);       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
 
-    RestServerRouter::router_ptr_t RegisterRestRoutes ( RestServerRouter::router_ptr_t router);
-
 private:
     // These are the persistent memory objects for this class
     pmem::obj::persistent_ptr<pmem::obj::vector<Customer>> p_customer_list {

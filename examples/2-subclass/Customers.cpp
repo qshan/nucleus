@@ -74,58 +74,43 @@ Customers::Start(const CTX& ctx_arg) {
 
     // App::init(this); RUNTIME App instance should be called here, if needed
 
-}
+    ctx.get()->rest_server->RegisterRoute(restinio::http_method_get(), R"(/api/v1/app/customers)",
+            [this](const req_t& req, const params_t& params, resp_t &resp) {
 
-RestServerRouter::router_ptr_t
-Customers::RegisterRestRoutes ( RestServerRouter::router_ptr_t router) {
+        json j = "{}"_json;
+        j["data"]["customers"] = "[]"_json;
 
-    router->http_get(
-        R"(/api/v1/app/customers)",
-        [this](auto req, auto params) {
-
-            json j = "{}"_json;
-            j["data"]["customers"] = "[]"_json;
-
-            for (const auto &it : *p_customer_list) {
-                json c = "{}"_json;
-                c["name"] = it.p_name->c_str();
-                c["city"] = it.p_city->c_str();
-                c["order_count"] = (int) it.order_count;
-                j["data"]["customers"].push_back(c);
-            }
-
-            return req->create_response()
-                    .append_header(restinio::http_field_t::access_control_allow_origin, "*")
-                    .set_body(j.dump())
-                    .done();
+        for (const auto &it : *p_customer_list) {
+            json c = "{}"_json;
+            c["name"] = it.p_name->c_str();
+            c["city"] = it.p_city->c_str();
+            c["order_count"] = (int) it.order_count;
+            resp["data"]["customers"].push_back(c);
         }
-    );
 
-    router->http_post(
-        R"(/api/v1/app/customers)",
-        [this](auto req, auto params) {
+        return restinio::status_ok();
 
-            ctx.get()->log->trace("HelloWorld adding new customer");
+    });
 
-            auto j_req = json::parse(req->body());
-            auto pop = pmem::obj::pool_by_pptr(p_customer_list);
-            pmem::obj::transaction::run(pop, [this, &j_req] {
-                p_customer_list->emplace_back(j_req["name"], j_req["city"], j_req["order_count"].template get<int>());
-            });
+    ctx.get()->rest_server->RegisterRoute(restinio::http_method_post(), R"(/api/v1/app/customers)",
+                                          [this](const req_t& req, const params_t& params, resp_t &resp) {
 
-            json j = "{}"_json;
-            j["response"]["message"] = fmt::format("Customer updated");
+        ctx.get()->log->trace("HelloWorld adding new customer");
 
-            return req->create_response(restinio::status_created())
-                    .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-                    .set_body( j.dump())
-                    .done();
-        }
-    );
+        auto j_req = json::parse(req->body());
+        auto pop = pmem::obj::pool_by_pptr(p_customer_list);
+        pmem::obj::transaction::run(pop, [this, &j_req] {
+            p_customer_list->emplace_back(j_req["name"], j_req["city"], j_req["order_count"].template get<int>());
+        });
+
+        json j = "{}"_json;
+        j["response"]["message"] = fmt::format("Customer updated");
+
+        return restinio::status_created();
+
+    });
 
     // TODO - Add other routes for getting single customer, adding new customers, deleting customers etc.
-
-    return router;
 
 }
 

@@ -51,52 +51,39 @@ HelloWorld::Start(const CTX& ctx_arg) {
         ctx = ctx_arg;
     }
     ctx.get()->log->debug("HelloWorld is starting");
-}
 
-RestServerRouter::router_ptr_t
-HelloWorld::RegisterRestRoutes ( RestServerRouter::router_ptr_t router) {
+    //auto rest_server = ctx.get()->rest_server;
 
-    // Map the APIS
 
-    router->http_get(
-            R"(/api/v1/app/message)",
-            [this](auto req, auto params) {
+    ctx.get()->rest_server->RegisterRoute(restinio::http_method_get(), R"(/api/v1/app/message)",
+            [this](const auto &req, const auto &params, auto &j) {
+        ctx.get()->log->debug("HelloWorld Message is being retrieved as {}", p_message->c_str());
+        j["data"]["value"] = p_message->c_str();
+        return restinio::status_ok();
 
-                json j = "{}"_json;
-                j["data"]["value"] = p_message->c_str();
+    });
 
-                return req->create_response()
-                        .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-                        .set_body( j.dump())
-                        .done();
-            });
+    ctx_arg->rest_server->RegisterRoute(restinio::http_method_put(), R"(/api/v1/app/message)",
+            [this](const auto& req, const auto& params, auto &j) {
 
-    router->http_put(
-            R"(/api/v1/app/message)",
-            [this](auto req, auto params) {
+        auto j_req = json::parse(req->body());
+        std::string message_value = j_req["value"];
+        ctx.get()->log->trace("HelloWorld Message is being set to {}.", message_value);
 
-                auto j_req = json::parse(req->body());
-                std::string message_value = j_req["value"];
-                ctx.get()->log->trace("HelloWorld Message is being set to {}.", message_value);
-                auto pop = pmem::obj::pool_by_pptr(p_message);
-                pmem::obj::transaction::run(pop, [this, &message_value] {
-                    p_message->assign(message_value);
-                    p_update_count++;
-                });
+        auto pop = pmem::obj::pool_by_pptr(p_message);
+        pmem::obj::transaction::run(pop, [this, &message_value] {
+            p_message->assign(message_value);
+            p_update_count++;
+        });
 
-                json j = "{}"_json;
-                j["response"]["message"] = fmt::format("Message value updated {} time(s) so far",
-                                                       p_update_count);
+        j["response"]["message"] = fmt::format("Message value updated {} time(s) so far", p_update_count);
 
-                return req->create_response()
-                        .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-                        .set_body( j.dump())
-                        .done();
-            });
+        return restinio::status_ok();
+    });
 
-    return router;
 
 }
+
 
 void
 HelloWorld::Stop()

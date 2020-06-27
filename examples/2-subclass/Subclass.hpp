@@ -40,8 +40,6 @@ public:
     void Start(const CTX& ctx);       // this happens each time the applications runs
     void Stop();        // this happens when the app is shutting down. Note there is no runtime destructor!
 
-    RestServerRouter::router_ptr_t RegisterRestRoutes ( RestServerRouter::router_ptr_t router);
-
     inline static const int layout_version = 0;
 
 private:

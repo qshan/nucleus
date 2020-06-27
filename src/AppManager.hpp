@@ -101,21 +101,24 @@ public:
 
         SetAppState(nucleus::STARTING);
 
+        ctx->log->trace("AppManager is Preparing Rest Routes");
+
+        ctx->rest_server->RegisterRoute(restinio::http_method_get(), "/api/v1/ping",
+                          [this](const req_t &req, const params_t &params, resp_t &resp){
+
+            resp["data"]["status"] = GetAppStateName();
+            return restinio::status_ok();
+
+        });
+
         ctx->log->trace("AppManager is calling app->Start()");
 
         app->Start(ctx);
 
-        ctx->log->trace("AppManager is Preparing Rest Routes");
-
-        auto rest_server_router = RestServerRouter(ctx);
-        rest_server_router.setRouter(RegisterRestRoutes(app, std::move(rest_server_router.getRouter())));
-
-        ctx->log->trace("AppManager is creating ReST Server. Disable ReST {}",
+        ctx->log->trace("AppManager is starting ReST Server. Disable ReST {}",
                          Config::to_string(config->rest_disable));
 
-        std::unique_ptr<RestServer> rest_server(new RestServer(ctx, rest_server_router.getRouter(),
-                                                                  config->rest_address, config->rest_port,
-                                                                  config->rest_threads));
+        ctx->rest_server->Start();
 
         SetAppState(nucleus::RUNNING);
 
@@ -126,9 +129,9 @@ public:
         // *** This Loop holds overall run state on main thread **************************
         while (GetAppState() == nucleus::RUNNING){
 
-            if (!rest_server->last_error().empty()) {
+            if (!ctx->rest_server->last_error().empty()) {
                 Exit(fmt::format("ReST Server has experienced an error: {}. Exiting",
-                                 rest_server->last_error()));
+                                 ctx->rest_server->last_error()));
             }
 
             CheckConditionPathExists(); // File based run lock
@@ -140,7 +143,7 @@ public:
         ctx->log->debug("AppManager Run Loop is exiting with AppState {}", GetAppStateName());
 
         ctx->log->debug("Closing ReST Server");
-        rest_server.reset(nullptr); // Reset unique ptr will close the server
+        ctx->rest_server->Stop(); // Reset unique ptr will close the server
 
         app->Stop();
         SetAppState(nucleus::STOPPED);
@@ -205,27 +208,6 @@ private:
         }
     }
 
-    std::unique_ptr<RestServerRouter::router_t> RegisterRestRoutes(pmem::obj::persistent_ptr<T> app, std::unique_ptr<RestServerRouter::router_t> router) {
-
-        router->http_get(
-                R"(/api/v1/ping)",
-                [this](auto req, auto params) {
-                    nlohmann::json j = "{}"_json;
-                    j["data"]["state"] = GetAppStateName();
-                    j["response"]["message"] = "Ping command received";
-                    return req->create_response()
-                            .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-                            .set_body( j.dump())
-                            .done();
-                });
-
-        // Register downstream routes
-        router = app->RegisterRestRoutes(std::move(router));
-
-        // return the router to the RestServer
-        return router;
-
-    }
 };
 
 
