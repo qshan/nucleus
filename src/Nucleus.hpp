@@ -43,11 +43,14 @@ public:
 
     /**
      * Start Nucleus using a pre-built instance of nucleus::config configure the instance.
-     * @param argc Arg count
-     * @param argv Arg string array
+     * @param ctx_ref a shared pointer of an existing ctx object. Must remain in scope for life of Nucleus
      */
 
-    explicit Nucleus (Config config) : config(std::make_shared<Config>(std::move(config))) {}
+    explicit Nucleus (CTX context) : ctx(context) {
+        if (ctx->config == nullptr || ctx->log == nullptr || ctx->rest_server == nullptr) {
+            throw std::invalid_argument("If using custom Context, it must be fully initialized");
+        }
+    }
 
     /**
      * Start Nucleus using argc and argv typically from `main()` to configure the instance.
@@ -55,12 +58,10 @@ public:
      * @param argv Arg string array
      */
 
-    Nucleus (int argc, char *argv[]) :
-        config(std::make_shared<Config>(std::filesystem::path(argv[0]).filename())) {
+    Nucleus (int argc, char *argv[]) : ctx(nullptr) {
 
-        // Load configuration manager first. Needed for log settings
         try {
-            config->config_parse_args(argc, argv);
+            config = std::make_unique<Config>(argc, argv);
         } catch (const std::invalid_argument &exc) {
             configuration_error = exc.what();
         }
@@ -76,23 +77,28 @@ public:
         int exitCode = EXIT_FAILURE;
 
         if (!configuration_error.empty()) {
-            return print_help();
+            // we exit here so we can exit cleanly, otherwise would be an exception from config error
+            return Config::print_help(configuration_error);
         }
 
-        // construct context and add config
-        ctx = std::make_shared<Context>();
-        ctx->config = config;
+        // Build our own context if not provided
+        if (ctx == nullptr) {
+            try {
+                auto config_ptr = config.get();
+                logger = std::make_unique<Logging>(config.get());
+                auto logging_ptr = logger.get();
+                rest_server = std::make_unique<RestServer>(config_ptr, logging_ptr);
+                RestServer *rest_server_ptr = rest_server.get();
+                ctx_instance = std::unique_ptr<Context>(new Context{config_ptr, logging_ptr, logger->get_logger(), rest_server_ptr});
+                Context *ctx_ptr = ctx_instance.get();
+                ctx = ctx_ptr;
+            } catch (const std::exception &exc) {
+                std::cout << "Exception during context setup: " << exc.what() << std::endl;
+                return 1;
+            }
+        }
 
-        // Load Logging Manager
-        logger = std::make_shared<Logging>(config->app_name, config->log_file, config->log_level);
-        ctx->log = logger->get_logger();
-
-        // Load rest server
-        rest_server = std::make_shared<RestServer>(ctx, config->rest_address, config->rest_port,
-                                                        config->rest_threads);
-        ctx->rest_server = rest_server;
-
-        ctx->log->info("The Nucleus engine is starting for app {}", config->app_name);
+        ctx->log->info("The Nucleus engine is starting for app {}", ctx->config->app_name);
 
         try {
 
@@ -118,18 +124,20 @@ public:
             ctx->log->critical("Exception: General: {}", exc.what());
         }
 
-        ctx->log->info("Exiting {} with exit status {}", config->app_name, exitCode);
+        ctx->log->info("Exiting {} with exit status {}", ctx->config->app_name, exitCode);
         return exitCode;
     }
 
 private:
 
-    std::shared_ptr<nucleus::Context> ctx;
-    std::shared_ptr<nucleus::Config> config;
-    std::shared_ptr<Logging> logger;
-    std::shared_ptr<RestServer> rest_server;
+    Context* ctx;
 
     std::string configuration_error;
+
+    std::unique_ptr<Config> config;
+    std::unique_ptr<Logging> logger;
+    std::unique_ptr<RestServer> rest_server;
+    std::unique_ptr<Context> ctx_instance;
 
     /// Install CTRL-C handler to try exit gracefully.
     void set_signal_handlers() const {
@@ -183,33 +191,6 @@ private:
 
     };
 
-    /// Print help message
-    int print_help() const {
-
-        std::stringstream usage;
-        usage << std::endl << "Usage: " << config->app_name << " [OPTIONS]" << std::endl
-              << "Options:" << std::endl
-              << "  -h --help                  This help information. See conf file for more details on arguments." << std::endl
-              << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << config->app_name << ".pmem" << std::endl
-              << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
-              << "  --log_file=filename        Log file path and name. Default is ./" << config->app_name << ".log" << std::endl
-              << "  --log_level=level          error, warn, info, debug, trace" << std::endl
-              << "  --rest_address=localhost   ReST Server address in name or IP format (see conf for external access)" << std::endl
-              << "  --rest_port=8080           ReST Server port number" << std::endl
-              << "  --rest_threads=4           Number of threads for ReST server" << std::endl
-              << "  --condition_path=filename  Server will exit if this specified path and file doesn't exist" << std::endl
-              << std::endl;
-
-        if (configuration_error.compare("HELP") != 0) {
-            std::cerr << std::endl <<  configuration_error << std::endl;
-            std::cerr << usage.str();
-            return EXIT_FAILURE;
-        } else {
-            std::cout << usage.str();
-            return EXIT_SUCCESS;  // since they asked for help
-        }
-
-    }
 };
 
 // These initialise static members for the templated class

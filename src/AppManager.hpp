@@ -51,7 +51,7 @@ friend class Nucleus;
 
 public:
 
-    explicit AppManager(const CTX& ctx_arg) : ctx(ctx_arg) {
+    explicit AppManager(const CTX ctx_arg) : ctx(ctx_arg) {
         ctx->log->trace("Constructing AppManager for app {}", ctx->config->app_name);
         auto app_pool = pool_manager.pool();
         if (app_pool.root()->app == nullptr) {
@@ -101,16 +101,6 @@ public:
 
         SetAppState(nucleus::STARTING);
 
-        ctx->log->trace("AppManager is Preparing Rest Routes");
-
-        ctx->rest_server->RegisterRoute(restinio::http_method_get(), "/api/v1/ping",
-                          [this](const req_t &req, const params_t &params, resp_t &resp){
-
-            resp["data"]["status"] = GetAppStateName();
-            return restinio::status_ok();
-
-        });
-
         ctx->log->trace("AppManager is calling app->Start()");
 
         app->Start(ctx);
@@ -154,7 +144,7 @@ public:
 
 private:
 
-    std::shared_ptr<Context> ctx;
+    CTX ctx;
 
     PoolManager<AppPool<T>> pool_manager {ctx, ctx->config->pool_main_file,
                                           fmt::format("{}__v{}", typeid(T).name(), T::layout_version),
@@ -180,7 +170,7 @@ private:
         return AppStateNames[pool_manager.pool().root()->app_state];
     }
 
-    std::string GetAppStateName(AppState state) const
+    [[nodiscard]] std::string GetAppStateName(AppState state) const
     {
         return AppStateNames[state];
     }

@@ -49,6 +49,7 @@ ctest = ObjDict({})
 
 def test_case_start():
     global ctest
+    ctest.TEST_NAME = "TEMPORARY_TEST"
     for parm in sys.argv:
         parm_without_d = parm[2:]
         if "=" not in parm_without_d:
@@ -78,7 +79,10 @@ class test_case_utils:
     # this can be extended for other util functions
     @staticmethod
     def get_server_url():
-        return f"{ctest.TEST_SERVER_SCHEME}://{ctest.TEST_SERVER_ADDRESS}:{ctest.TEST_SERVER_PORT}"
+        scheme = "http" if "TEST_SERVER_SCHEME" not in ctest else ctest.TEST_SERVER_SCHEME
+        address = "localhost" if "TEST_SERVER_ADDRESS" not in ctest else ctest.TEST_SERVER_ADDRESS
+        port = "8080" if "TEST_SERVER_PORT" not in ctest else ctest.TEST_SERVER_PORT
+        return f"{scheme}://{address}:{port}"
 
     """ @copyright - https://stackoverflow.com/questions/25851183/how-to-compare-two-json-objects-with-the-same-elements-in-a-different-order-equa """
     # Note also issue re should lists be strictly ordered?

@@ -18,6 +18,7 @@
 
 // #define SPDLOG_FMT_EXTERNAL
 #include "spdlog/spdlog.h"
+#include "Config.hpp"
 
 namespace nucleus {
 
@@ -55,10 +56,10 @@ template<class T>
 friend class Nucleus;
 
 public:
-    explicit Logging(const std::string &name, const std::string& log_file,
-                     const spdlog::level::level_enum log_level);
+    explicit Logging(const Config* config);
+    Logging(const std::string &name, const std::string& log_file, spdlog::level::level_enum log_level);
 
-    const std::shared_ptr<spdlog::logger>& get_logger() const ;
+    [[nodiscard]] spdlog::logger* get_logger() const;
 
 private:
 

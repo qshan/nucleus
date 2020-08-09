@@ -52,23 +52,31 @@
 #include "Config.hpp"
 #include "Utilities.hpp"
 
-
 namespace nucleus {
 
-class Auth; // fwd declaration
+using namespace pmem::obj;
+using nlohmann::json;
+
 class RestServer; // fwd declaration
 
+/// @brief Provides access to common execution components
 class Context {
-// should we make this a vector with a common base? Or keep simple?
+
 public:
-    std::shared_ptr<Config> config;
-    std::shared_ptr<spdlog::logger> log;
-    std::shared_ptr<RestServer> rest_server;
+    Config* config;
+    Logging* logging;
+    spdlog::logger* log;  /// @brief direct access to default logger for ease of use
+    RestServer* rest_server;
 };
 
-using CTX = std::shared_ptr<Context>;
+using CTX = Context*;
 
 }
+
+struct Session {
+    std::string username = {"anonymous"};
+};
+using session_t = Session*;
 
 namespace nucleus::exceptions {
 
@@ -90,6 +98,7 @@ private:
     std::string message;
 
 };
+
 
 }
 

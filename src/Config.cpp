@@ -24,19 +24,37 @@
 
 namespace nucleus {
 
+Config::Config() {
+    set_name("nucleus");
+};
 
-Config::Config(const std::string& app_name) : app_name(app_name)
-{
-    if (app_name.empty()) {
+void Config::set_name(const std::string& name_arg) {
+
+    if (name_arg.empty()) {
         throw std::invalid_argument("app_name cannot be empty");
     }
+    app_name = name_arg;
+    pool_main_file = fmt::format("./{}.pmem", app_name);
+    log_file = fmt::format("./{}.log", app_name);
 
 }
+
+Config::Config(const std::string& name_arg)
+{
+    set_name(name_arg);
+}
+
+Config::Config(int argc, char *argv[]) {
+
+    config_parse_args(argc, argv);
+};
 
 void
 Config::config_parse_args(int argc, char *argv[]) {
 
     if (argc == 0) { throw std::invalid_argument("Args must have at least 1 arg - the executable name"); }
+
+    set_name(std::filesystem::path(argv[0]).filename());
 
     auto string_args = args_to_stringstream(argc, argv);
 
@@ -216,6 +234,44 @@ std::string
 Config::to_string(bool bool_arg) {
     return bool_arg ? "true" : "false";
 }
+
+/// Print help message
+
+
+
+int Config::print_help(const std::exception& config_exception) {
+    return print_help((std::string) config_exception.what());
+}
+
+int Config::print_help(const std::string& configuration_error) {
+
+    std::string help_app_name = "<appname>";
+
+    std::stringstream usage;
+    usage << std::endl << "Usage: " << help_app_name << " [OPTIONS]" << std::endl
+          << "Available Options:" << std::endl
+          << "  -h --help                  This help information. See conf file for more details on arguments." << std::endl
+          << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << help_app_name << ".pmem" << std::endl
+          << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
+          << "  --log_file=filename        Log file path and name. Default is ./" << help_app_name << ".log" << std::endl
+          << "  --log_level=level          error, warn, info, debug, trace" << std::endl
+          << "  --rest_address=localhost   ReST Server address in name or IP format (see conf for external access)" << std::endl
+          << "  --rest_port=8080           ReST Server port number" << std::endl
+          << "  --rest_threads=4           Number of threads for ReST server" << std::endl
+          << "  --condition_path=filename  Server will exit if this specified path and file doesn't exist" << std::endl
+          << std::endl;
+
+    if (configuration_error == "HELP") {
+        std::cout << usage.str();
+        return EXIT_SUCCESS;  // since they asked for help
+    } else {
+        std::cerr << std::endl <<  configuration_error << std::endl;
+        std::cerr << usage.str();
+        return EXIT_FAILURE;
+    }
+
+}
+
 
 
 }

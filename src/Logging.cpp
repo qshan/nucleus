@@ -21,6 +21,9 @@
 
 using namespace nucleus;
 
+Logging::Logging(const Config* config) : Logging(config->app_name, config->log_file, config->log_level) {
+}
+
 Logging::Logging(const std::string& name, const std::string& log_file, const spdlog::level::level_enum log_level)
 {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -54,8 +57,9 @@ Logging::Logging(const std::string& name, const std::string& log_file, const spd
     // The line above must be retained if using the Nucleus Open Source license.
 }
 
-const std::shared_ptr<spdlog::logger> &
+spdlog::logger*
 Logging::get_logger() const {
-    return mylog;
+    spdlog::logger *ptr = mylog.get();
+    return ptr;
 }
 

@@ -16,7 +16,7 @@
 # This is run each time for each test case
 
 message(STATUS "==================================================================================================")
-message(STATUS "Running Test case ${TEST_NAME} | TEST_EXE ${TEST_EXE} | "
+message(STATUS "Running Test case ${TEST_NAME} | TEST_EXE ${TEST_EXE} | TEST_EXE_EXTRA_START_VARS ${TEST_EXE_EXTRA_START_VARS} | "
                "TEST_CASE_DIR ${TEST_CASE_DIR} | TEST_OUT_DIR ${TEST_OUT_DIR}")
 
 function(test_case_start)
@@ -35,7 +35,8 @@ function(test_case_check)
 
     foreach(RESULT_ITEM ${TEST_CASE_RESULT})
         if (NOT ${RESULT_ITEM} EQUAL 0)
-            message(FATAL_ERROR "TEST_CASE_RESULT for ${TEST_NAME} ${sub_check_message} was non-zero."
+            message(STATUS "------------------------------------------------------------------------------------------")
+            message(FATAL_ERROR "FAIL: ${TEST_NAME} ${sub_check_message} result was non-zero."
                                 " Result: ${TEST_CASE_RESULT}")
         endif()
     endforeach()

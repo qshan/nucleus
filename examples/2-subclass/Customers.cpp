@@ -15,41 +15,42 @@
 
 #include "Customers.hpp"
 
-using namespace nucleus;
-using namespace nucleus::examples::subclass;
+namespace nucleus::examples::subclass {
 
-using nlohmann::json;
-using namespace pmem::obj;
 
 Customer::Customer(const std::string& name_arg, const std::string& city_arg, int order_count_arg) :
+
     p_name(make_persistent<pmem::obj::string>(name_arg)),
     p_city(make_persistent<pmem::obj::string>(city_arg)),
     order_count(order_count_arg) {
 
 }
 
-Customer::~Customer() {
-}
 
-Customers::Customers(const CTX& ctx_arg)
-{
+Customers::Customers(const CTX& ctx_arg) {
+
     ctx_arg->log->debug("Customers Persistent Constructor called");
+
+    // Note that the vector has been initialized in the class member variable initialization
+
 }
 
-Customers::~Customers()
-{
+Customers::~Customers() {
+
     ctx.get()->log->debug("Customers Persistent Destructor called");
+
     auto pop = pmem::obj::pool_by_pptr(p_customer_list);
     pmem::obj::transaction::run(pop, [this] {
-                delete_persistent<pmem::obj::vector<Customer>>(p_customer_list);
+        pmem::obj::delete_persistent<pmem::obj::vector<Customer>>(p_customer_list);
     });
+
 }
 
 void
-Customers::Initialize(const CTX& ctx_arg)
-{
+Customers::Initialize(const CTX& ctx_arg) {
+
     ctx = ctx_arg;
-    
+
     // Initialize any child objects here
     ctx.get()->log->trace("Customers is initializing");
 
@@ -67,15 +68,17 @@ Customers::Initialize(const CTX& ctx_arg)
 
 void
 Customers::Start(const CTX& ctx_arg) {
+
     if (ctx.get() == nullptr) {
         ctx = ctx_arg;
     }
+
     ctx.get()->log->debug("Customers is starting");
 
     // App::init(this); RUNTIME App instance should be called here, if needed
 
-    ctx.get()->rest_server->RegisterRoute(restinio::http_method_get(), R"(/api/v1/app/customers)",
-            [this](const req_t& req, const params_t& params, resp_t &resp) {
+    ctx.get()->rest_server->routes()->add(http_method_get(), R"(/api/v1/app/customers)",
+        [this](const auto &req, auto &resp) {
 
         json j = "{}"_json;
         j["data"]["customers"] = "[]"_json;
@@ -88,25 +91,29 @@ Customers::Start(const CTX& ctx_arg) {
             resp["data"]["customers"].push_back(c);
         }
 
-        return restinio::status_ok();
+        return status_ok();
 
     });
 
-    ctx.get()->rest_server->RegisterRoute(restinio::http_method_post(), R"(/api/v1/app/customers)",
-                                          [this](const req_t& req, const params_t& params, resp_t &resp) {
+    ctx.get()->rest_server->routes()->add(http_method_post(), R"(/api/v1/app/customers)",
+            [this](const auto &req, auto &resp) {
 
-        ctx.get()->log->trace("HelloWorld adding new customer");
+        ctx.get()->log->trace("Customers adding new customer");
 
         auto j_req = json::parse(req->body());
+
+        if (j_req["name"].template get<std::string>().empty()) {
+            throw http_error(status_bad_request(), "Name must be provided");
+        }
+
         auto pop = pmem::obj::pool_by_pptr(p_customer_list);
         pmem::obj::transaction::run(pop, [this, &j_req] {
             p_customer_list->emplace_back(j_req["name"], j_req["city"], j_req["order_count"].template get<int>());
         });
 
-        json j = "{}"_json;
-        j["response"]["message"] = fmt::format("Customer updated");
+        resp["response"]["message"] = fmt::format("Customer updated");
 
-        return restinio::status_created();
+        return status_created();
 
     });
 
@@ -115,9 +122,12 @@ Customers::Start(const CTX& ctx_arg) {
 }
 
 void
-Customers::Stop()
-{
+Customers::Stop() {
+
     // if you create any volatile objects, delete them here
     ctx.get()->log->trace("Customers is stopping");
+
+}
+
 
 }

@@ -34,7 +34,6 @@ friend Customers;
 
 public:
     explicit Customer(const std::string& name_arg = "", const std::string& city_arg = "", int order_count_arg = 0);
-    ~Customer();
     // Copy and move constructors are used by Vector. Do not delete.
 
 private:

@@ -20,28 +20,37 @@
 using nlohmann::json;
 using namespace restinio;
 
-
 namespace nucleus {
 
-RestServer::RestServer(const CTX& ctx_arg, const std::string& address_arg, unsigned short port_arg, size_t threads_arg) :
-        ctx(ctx_arg), address(address_arg), port(port_arg), threads(threads_arg)
+
+RestServer::RestServer(Config* config, Logging* logging) :
+        RestServer(logging, config->rest_address, config->rest_port, config->rest_threads)
+{ }
+
+RestServer::RestServer(Logging* logging, std::string address_arg, unsigned short port_arg, size_t threads_arg) :
+        log(logging->get_logger()), address(std::move(address_arg)), port(port_arg), threads(threads_arg),
+        rest_router(std::make_unique<RestRouter>(logging))
 {
+    log->trace("RestServer::() called as {}:{} with {} threads {}", address, port, threads);
+}
 
-    ctx->log->trace("Rest Server is constructing");
-
-    RegisterDefaultRoutes();
-
+RestServer::~RestServer() {
+    log->trace("RestServer::~() called");
 }
 
 void
 RestServer::Start() {
+
+    RegisterDefaultRoutes();
 
     server = std::make_unique<server_t> ( restinio::own_io_context(),
                 restinio::server_settings_t< my_traits_t >{}
                 .port( port )
                 .address( address )
                 .separate_accept_and_create_connect(true)
-                .request_handler( std::move(router)));
+                .request_handler([this](auto req) {
+                    return route_handler(std::move(req));
+                }));
 
     runner = std::make_unique<runner_t>(threads, *server);
 
@@ -61,157 +70,68 @@ RestServer::Start() {
 
     try {
         run_future.get();
-        ctx->log->debug("ReST Server started with {} threads across {} CPUs",
+        log->debug("ReST Server started with {} threads across {} CPUs",
                        threads,std::thread::hardware_concurrency());
-        ctx->log->info("*** Ping ReST URL is http://{}:{}/api/v1/ping", address, port);
+        log->info("*** Ping ReST URL is http://{}:{}/api/v1/ping", address, port);
 
     } catch (const std::system_error& e) {
         m_last_error = e.what();
-        ctx->log->critical("ReSTServer() starting error: {}", e.what());
+        log->critical("ReSTServer() starting error: {}", e.what());
     }
-
 
 }
 
 void
 RestServer::Stop() {
 
-    ctx->log->info("RestServer is being shut down");
+    log->info("RestServer is being shut down");
 
     runner->stop();
     runner->wait();
 
-    ctx->log->debug("RestServer has shut down");
+    log->debug("RestServer has shut down");
 }
 
-RestServer::~RestServer() {
-    ctx->log->debug("RestServer is closing");
-}
-
-std::string RestServer::last_error() const {
+std::string
+RestServer::last_error() const {
     return m_last_error;
 }
 
-void RestServer::RegisterDefaultRoutes() {
+void
+RestServer::RegisterDefaultRoutes()
+{
+    log->trace("ReST Server configuring default routes");
 
-    ctx->log->trace("ReST Server configuring default routes");
+    auto options = rest_router->custom_route_options();
+    options->log_level = spdlog::level::info;
 
-    router->non_matched_request_handler([](auto req){
-        // Retuns a 404 if route not found
+    rest_router->add(restinio::http_method_get(), "/api/v1/ping", options,
+             [this](const req_t &req, const params_t &params, const session_t &session, resp_t &resp) {
+        log->trace("RestServer returning ping");
+        return restinio::status_ok();
+    });
+
+    rest_router->non_matched_request_handler([this](auto req){
+        // Returns a 404 if route not found
+        log->trace("Using RestServer nmrh");
         return req->create_response(status_not_found()).connection_close().done();
-
     });
 
-    ctx->log->trace("ReST Server default routes done");
-
+    log->trace("ReST Server default routes done");
 }
 
-void
-RestServer::RegisterRoute(restinio::http_method_id_t method,
-                          const std::string& route_path,
-                          route_callback_t callback) {
-    RouteOptions options;
-    RegisterRoute(method, route_path, options, callback);
+request_handling_status_t
+RestServer::route_handler(request_handle_t req)
+{
+    log->trace("Using base route handler");
+    return (*rest_router->router)(std::move(req));
 }
 
-void
-RestServer::RegisterRoute(restinio::http_method_id_t method,
-                          const std::string& route_path,
-                          RouteOptions options,
-                          route_callback_t callback) {
-
-    ctx->log->debug("RestServer registering route {} {}", method.c_str(),  route_path);
-
-    router->add_handler(method, route_path,
-                        [this, callback, options](const restinio::request_handle_t &req,
-                                                const restinio::router::route_params_t &params) {
-
-        // Note - we are taking a deliberate copy of callback & options here, otherwise we lose the ref
-        // when the calling function exits. Could use std::copy?
-
-        return Request(req, params, callback, options);
-
-    });
-
+RestRouter*
+RestServer::routes()
+{
+    return rest_router.get();
 }
 
-restinio::request_handling_status_t
-RestServer::Request(const restinio::request_handle_t &req,
-                    const restinio::router::route_params_t &params,
-                    route_callback_t callback,
-                    const RouteOptions& options) {
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> start;
-    RequestStart(req, options, start);
-
-    // Json response object
-    nlohmann::json res = "{}"_json;
-    res["response"] = "{}"_json;
-
-    restinio::http_status_line_t status;
-
-    try {
-
-        ctx->log->trace("Calling callback");
-        status = callback(req, params, res);
-        ctx->log->trace("Back from callback. Status is {}", status.status_code().raw_code());
-
-    } catch ( const std::exception &exc) {
-
-        status = restinio::status_internal_server_error();
-        res["response"]["reason"] = fmt::format("Server error: {} ({})", exc.what(), typeid(exc).name());
-
-    }
-
-    RequestEnd(req, options, start, res, status);
-
-    // return the response;
-    return req->create_response(status)
-            .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-            .set_body( res.dump())
-            .done();
-
-}
-
-void RestServer::RequestStart(const restinio::request_handle_t &req,
-                              const RouteOptions& options,
-                              std::chrono::time_point<std::chrono::high_resolution_clock>& start) {
-
-        start = std::chrono::high_resolution_clock::now();
-
-        if (ctx->config->log_level == spdlog::level::trace) {
-
-            // Log headers for debugging
-            std::stringstream headers;
-            for(const auto & it : req->header()) {headers << it.name() << ":" << it.value() << "|";}
-
-            ctx->log->trace("RESTAPI START: {} || {} || {}", req->remote_endpoint(), headers.str(), req->body());
-        }
-}
-
-void
-RestServer::RequestEnd(const restinio::request_handle_t &req,
-                       const RouteOptions& options,
-                       const std::chrono::time_point<std::chrono::high_resolution_clock>& start,
-                       const json& res,
-                       const restinio::http_status_line_t& status) {
-
-    auto path = (std::string) req->header().path();
-
-    auto log_level = status.status_code() == restinio::status_internal_server_error().status_code() ? spdlog::level::err : options.log_level;
-
-    // Calculate response time
-    std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start;
-    auto elapsed_ms = (long) std::round(elapsed.count() * 1000);
-
-    // Log request
-    std::string log_msg = res["response"].contains("reason") ? res["response"]["reason"] : "OK";
-
-    // Add separate logger - https://github.com/axomem/nucleus/issues/62
-    ctx->log->log(log_level, "{} {}__{}  {} {}?{} {} {} {}", req->remote_endpoint(),
-                  req->header().method(), path, req->header().query(),
-                  status.status_code().raw_code(), elapsed_ms, log_msg);
-
-}
 
 }

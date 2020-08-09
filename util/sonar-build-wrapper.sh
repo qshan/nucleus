@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-[[ ! -f "sonar-project.properties" ]] && { echo "Run from project root"; exit 1;}
+[[ ! -z "$1" ]] && { echo "Changing to dir $1"; cd "$1";}
 
-[[ ! -d "build" ]] && mkdir build
-cd build || exit 1
+[[ ! -f "CMakeCache.txt" ]] && { echo "Run from a build directory. Current dir is $PWD"; exit 1;}
+
+echo "Working directory is $PWD"
 
 make clean
 cmake .. -DCOVERAGE=ON

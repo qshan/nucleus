@@ -28,7 +28,7 @@ template <class N>
 class PoolManager {
 
 public:
-    explicit PoolManager(const CTX& ctx_arg, const std::string &fileName_arg, const std::string &layout_arg, const size_t pool_main_size) :
+    explicit PoolManager(const CTX ctx_arg, const std::string &fileName_arg, const std::string &layout_arg, const size_t pool_main_size) :
             ctx(ctx_arg), file_name(fileName_arg) {
 
         ctx->log->debug("PoolManager::() with pool file name {} and layout {}", file_name, layout_arg);

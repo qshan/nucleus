@@ -15,35 +15,40 @@
 
 #include "Subclass.hpp"
 
-using namespace nucleus;
-using namespace nucleus::examples::subclass;
-using namespace pmem::obj;
+namespace nucleus::examples::subclass {
 
-SubClass::SubClass(const CTX& ctx_arg) : p_customers{pmem::obj::make_persistent<Customers>(ctx_arg)}
-{
+
+SubClass::SubClass(const CTX& ctx_arg) : p_customers{pmem::obj::make_persistent<Customers>(ctx_arg)} {
+
     ctx_arg->log->debug("SubClass Persistent Constructor called. App name is {}", ctx_arg->config->app_name);
+
 }
 
-SubClass::~SubClass()
-{
+SubClass::~SubClass() {
+
     ctx.get()->log->debug("SubClass Persistent Destructor called");
+
     auto pop = pmem::obj::pool_by_pptr(p_customers);
     pmem::obj::transaction::run(pop, [this] {
-                delete_persistent<Customers>(p_customers);
+        pmem::obj::delete_persistent<Customers>(p_customers);
     });
+
 }
 
 void
-SubClass::Initialize(const CTX& ctx_arg)
-{
+SubClass::Initialize(const CTX& ctx_arg) {
+
     ctx = ctx_arg;
-    // Initialize any child objects here
     ctx.get()->log->trace("SubClass is initializing");
+
+    // Initialize any child objects here
     p_customers->Initialize(ctx);
+
 }
 
 void
 SubClass::Start(const CTX& ctx_arg) {
+
     if (ctx.get() == nullptr) {
         ctx = ctx_arg;
     }
@@ -56,11 +61,13 @@ SubClass::Start(const CTX& ctx_arg) {
 }
 
 void
-SubClass::Stop()
-{
+SubClass::Stop() {
+
     // if you create any volatile objects, delete them here
     p_customers->Stop();
     ctx.get()->log->trace("SubClass is stopping");
 
 }
 
+
+}

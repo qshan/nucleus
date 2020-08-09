@@ -17,28 +17,28 @@
 #include "HelloWorld.hpp"
 #include "RestServer.hpp"
 
-using namespace nucleus;
-using namespace nucleus::examples::helloworld;
-using nlohmann::json;
-using namespace pmem::obj;
+namespace nucleus::examples::helloworld {
 
-HelloWorld::HelloWorld(const CTX& ctx)
-{
+
+HelloWorld::HelloWorld(const CTX& ctx) {
+
     ctx->log->debug("HelloWorld Persistent Constructor called. App name is {}", ctx->config->app_name);
+
 }
 
-HelloWorld::~HelloWorld()
-{
+HelloWorld::~HelloWorld() {
+
     ctx.get()->log->debug("HelloWorld Persistent Destructor called");
     auto pop = pmem::obj::pool_by_pptr(p_message);
     pmem::obj::transaction::run(pop, [this] {
-                delete_persistent<pmem::obj::string>(p_message);
+                pmem::obj::delete_persistent<pmem::obj::string>(p_message);
     });
+
 }
 
 void
-HelloWorld::Initialize(const CTX& ctx_arg)
-{
+HelloWorld::Initialize(const CTX& ctx_arg) {
+
     ctx = ctx_arg;
     // Initialize any child objects here
     ctx.get()->log->trace("HelloWorld is initializing");
@@ -47,28 +47,30 @@ HelloWorld::Initialize(const CTX& ctx_arg)
 
 void
 HelloWorld::Start(const CTX& ctx_arg) {
+
     if (ctx.get() == nullptr) {
         ctx = ctx_arg;
     }
     ctx.get()->log->debug("HelloWorld is starting");
 
-    //auto rest_server = ctx.get()->rest_server;
+    ctx.get()->rest_server->routes()->add(http_method_get(), R"(/api/v1/app/message)",
+            [this](const auto &req, auto &resp) {
 
-
-    ctx.get()->rest_server->RegisterRoute(restinio::http_method_get(), R"(/api/v1/app/message)",
-            [this](const auto &req, const auto &params, auto &j) {
-        ctx.get()->log->debug("HelloWorld Message is being retrieved as {}", p_message->c_str());
-        j["data"]["value"] = p_message->c_str();
-        return restinio::status_ok();
+        resp["data"]["value"] = p_message->c_str();
+        return status_ok();
 
     });
 
-    ctx_arg->rest_server->RegisterRoute(restinio::http_method_put(), R"(/api/v1/app/message)",
-            [this](const auto& req, const auto& params, auto &j) {
+    ctx_arg->rest_server->routes()->add(http_method_put(), R"(/api/v1/app/message)",
+            [this](const auto& req, auto &resp) {
 
         auto j_req = json::parse(req->body());
+
         std::string message_value = j_req["value"];
-        ctx.get()->log->trace("HelloWorld Message is being set to {}.", message_value);
+
+        if (message_value.empty()) {
+            throw http_error(status_bad_request(), "Value must be provided");
+        }
 
         auto pop = pmem::obj::pool_by_pptr(p_message);
         pmem::obj::transaction::run(pop, [this, &message_value] {
@@ -76,19 +78,20 @@ HelloWorld::Start(const CTX& ctx_arg) {
             p_update_count++;
         });
 
-        j["response"]["message"] = fmt::format("Message value updated {} time(s) so far", p_update_count);
+        resp["response"]["message"] = fmt::format("Message value updated {} time(s) so far", p_update_count);
 
-        return restinio::status_ok();
+        return status_ok();
     });
-
 
 }
 
-
 void
-HelloWorld::Stop()
-{
+HelloWorld::Stop() {
+
     // if you create any volatile objects, delete them here
     ctx.get()->log->trace("HelloWorld is stopping");
+
+}
+
 
 }

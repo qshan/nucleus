@@ -57,24 +57,24 @@ jobs:
       run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE="Release" ..
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build --parallel 2
 
     - name: test
       run: cmake --build build --target test
 
-    - name: upload-test-logs CMake Log
+    - name: upload-test-logs CMake Logs
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
-        name: Last Test Log
-        path: build/Testing/Temporary/LastTest.log
+        name: CMake Test Logs
+        path: build/Testing/Temporary/*.log
 
-    - name: upload-test-logs Nucleus Server log
+    - name: upload-test-logs Test Case logs
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
-        name: Last Nucleus Server log
-        path: build/test/fixture_start_server/nucleus.log
+        name: All Test Case logs
+        path: build/test/**/*.log
 
     - name: package
       run: make -C build package

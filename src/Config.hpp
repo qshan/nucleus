@@ -31,12 +31,14 @@ class Config {
 
 public:
 
-    Config() = delete;
+    Config();
     explicit Config(const std::string& app_name);
+    explicit Config(int argc, char *argv[]);
     virtual ~Config() = default;
 
     void config_parse_args(int argc, char *argv[]);
-
+    static int print_help(const std::exception& configuration_error);
+    static int print_help(const std::string& configuration_error);
     // These are the config values to use.
     // Also add to Config.cpp and nucleus.conf.template
 
@@ -44,10 +46,10 @@ public:
 
     // For logging
     spdlog::level::level_enum log_level = spdlog::level::debug;
-    std::string log_file = fmt::format("./{}.log", app_name);
+    std::string log_file;
 
     // For PoolManager - main pool file
-    std::string pool_main_file = fmt::format("./{}.pmem", app_name);
+    std::string pool_main_file;
     size_t pool_main_size = (size_t) 1024*1024*1024*1; // 1GB
 
     // For ReSTServer
@@ -64,6 +66,9 @@ public:
     static std::string to_string(bool bool_arg);
 
 private:
+
+    /// Set defaults based on name
+    void set_name(const std::string& name);
 
     /// Convert a set of args from command line into a string stream with EOL chars
     static std::stringstream args_to_stringstream(int argc, char *argv[]);

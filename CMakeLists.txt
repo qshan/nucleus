@@ -17,10 +17,12 @@ cmake_minimum_required(VERSION 3.15)
 project(nucleus)
 
 set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+include(cmake/utils.cmake)
 
 if (NOT VERSION) # already set from higher-level project
     set(VERSION 0.3.beta)
 endif()
+
 
 # === Set compiler definitions =========================================================================================
 
@@ -133,7 +135,7 @@ set (NUCLEUS_ALL_TARGETS "")
 
 function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
 
-    message(STATUS "Adding target ${APP_NAME} ================================")
+    message(STATUS "Adding target ${APP_NAME} =================================")
     # message(STATUS "${APP_NAME}" "\n" "${APP_DIR}" "\n" "${APP_SOURCES}" "\n" "${APP_INCLUDE_DIRS}" "\n" "${APP_LIBRARIES}")
 
     add_executable(${APP_NAME} ${APP_SOURCES}
@@ -164,11 +166,12 @@ function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
     if (EXISTS "${APP_DIR}/test/CMakeLists.txt")
         if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
             #set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-            ADD_SUBDIRECTORY(${APP_DIR}/test)
+            include(${APP_DIR}/test/CMakeLists.txt)
         else()
             #set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/nucleus)
             message(STATUS "Out of tree build detected. "
-                           "Make sure to include your tests in your top-level test folder.")
+                           "Include your common tests in your top-level test folder.")
+            include(${APP_DIR}/test/CMakeLists.txt)
         endif()
     endif()
 
@@ -176,7 +179,7 @@ function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
     getnextport(TEST_SERVER_PORT ${TEST_SERVER_PORT})
     set(TEST_SERVER_PORT ${TEST_SERVER_PORT} PARENT_SCOPE)
 
-    message(STATUS "Target configuration done")
+    message(STATUS "Target configuration done =================================")
 
 endfunction()
 
@@ -244,28 +247,50 @@ elseif(EXISTS "${CMAKE_SOURCE_DIR}/myapp/main.cpp")
     include(cmake/install.cmake)
     include(cmake/package.cmake)
 
+elseif(APP_BUILD_DIRECTORY)
+
+    message(STATUS "Using app provided build directory ${APP_BUILD_DIRECTORY}")
+
 else()
 
-    set(BUILD_EXAMPLES ON)
+    set(APP_BUILD_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/examples)
+    message(STATUS "Using Nucleus example build directory ${APP_BUILD_DIRECTORY}")
 
 endif()
 
-if (BUILD_EXAMPLES)
+if (APP_BUILD_DIRECTORY)
+    # later could move this to a function and call with both examples and test directories.
+    # make a list function parm so upper level projects can call with list to iterate.
 
-    getsubdirlist(EXAMPLE_DIRS ${CMAKE_SOURCE_DIR}/examples)
+    getsubdirlist(build_subdirs ${APP_BUILD_DIRECTORY})
 
-    foreach(subdir ${EXAMPLE_DIRS})
+    # Take a copy as we'll add to these in each loop (also libs?)
+    set (APP_SOURCES_INITIAL ${APP_SOURCES})
+    set (APP_INCLUDE_DIRS_INITIAL ${APP_INCLUDE_DIRS})
+
+    foreach(subdir ${build_subdirs})
+
+        if (NOT EXISTS ${APP_BUILD_DIRECTORY}/${subdir}/main.cpp)
+            break()
+        endif()
 
         set (APP_NAME ${subdir})
+        set (APP_DIR "${APP_BUILD_DIRECTORY}/${subdir}")
+        list(APPEND NUCLEUS_ALL_TARGETS ${APP_NAME})
 
-        set (APP_DIR "${CMAKE_SOURCE_DIR}/examples/${subdir}")
+        # Reset these to initial values
+        set (APP_SOURCES ${APP_SOURCES_INITIAL})
+        set (APP_INCLUDE_DIRS ${APP_INCLUDE_DIRS_INITIAL})
 
-        file(GLOB APP_SOURCES ${APP_DIR}/*.cpp)
-        set(APP_INCLUDE_DIRS  ${APP_DIR})
+        # add additional target config
+        if (EXISTS ${APP_BUILD_DIRECTORY}/${subdir}/CMakeLists.txt)
+            include (${APP_BUILD_DIRECTORY}/${subdir}/CMakeLists.txt)
+        endif()
+
+        file(GLOB APP_SOURCES ${APP_SOURCES} ${APP_DIR}/*.cpp)
+        set(APP_INCLUDE_DIRS  ${APP_INCLUDE_DIRS} ${APP_DIR})
 
         add_target("${APP_NAME}" "${APP_DIR}" "${APP_SOURCES}" "${APP_INCLUDE_DIRS}" "${APP_LIBRARIES}")
-
-        list(APPEND NUCLEUS_ALL_TARGETS ${APP_NAME})
 
     endforeach()
 
@@ -284,20 +309,20 @@ endif()
 
 # Run test twice to try resolve https://github.com/axomem/nucleus/issues/58
 add_custom_target(analyze
-    COMMAND util/sonar-build-wrapper.sh
-    COMMAND ${CMAKE_COMMAND} --build build --target test
-    COMMAND ${CMAKE_COMMAND} --build build --target test
-    COMMAND util/sonar-run.sh
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMAND ${NUCLEUS_SOURCE_DIR}/util/sonar-build-wrapper.sh ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} --build . --target test
+    COMMAND ${CMAKE_COMMAND} --build . --target test
+    COMMAND ${NUCLEUS_SOURCE_DIR}/util/sonar-run.sh ${CMAKE_BINARY_DIR}
     COMMENT "Running SONAR analysis. If sonar not installed, use util/sonar-install.sh"
 )
 
 add_custom_target(docs
-        COMMAND doxygen doc/main.Doxyfile.in
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        COMMAND ${CMAKE_COMMAND} -E env DOXYGEN_OUTPUT_DIRECTORY=${CMAKE_BINARY_DIR}/doc doxygen doc/main.Doxyfile.in
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/..
 )
 
 add_custom_target(check
+        # issue here - parallel builds
         # message(STATUS "Building and Testing targets" "${NUCLEUS_ALL_TARGETS}")
         # COMMAND ${CMAKE_COMMAND} --parallel --build .
         COMMAND ${CMAKE_COMMAND} --build . --target test

@@ -10,7 +10,7 @@ response = requests.get(f"{server}/api/v1/ping")
 
 assert response.status_code == 200, f"Got {response.status_code}"
 
-assert "data" in response.json(), f"Got {json.dumps(response.json())}"
+# assert "data" in response.json(), f"Got {json.dumps(response.json())}" - removed when made basic unauth ping
 
 response = requests.get(f"{server}/api/v1/not_found")
 

@@ -2,6 +2,8 @@
 # Script to install given APP_NAME as a SystemD Service
 
 # Fix Relocatable paths -  https://github.com/axomem/nucleus/issues/45
+# Edit or generate SystemD unit file and conf file with appname - https://github.com/axomem/nucleus/issues/68
+
 
 if(NUCLEUS_INSTALL_INCLUDED)
     message(STATUS "INSTALL was already included for ${NUCLEUS_INSTALL_INCLUDED}")
