@@ -111,6 +111,7 @@ public:
     void add_handler_direct( Method_Matcher && method_matcher, string_view_t route_path,
                       restinio::router::express_request_handler_t handler )
     {
+        log->debug("RestRouter adding direct route {}", route_path);
         router->add_handler( std::forward<Method_Matcher>(method_matcher), route_path, path2regex::options_t{},
                 std::move( handler ) );
     }

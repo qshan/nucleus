@@ -31,7 +31,7 @@ RestServer::RestServer(Logging* logging, std::string address_arg, unsigned short
         log(logging->get_logger()), address(std::move(address_arg)), port(port_arg), threads(threads_arg),
         rest_router(std::make_unique<RestRouter>(logging))
 {
-    log->trace("RestServer::() called as {}:{} with {} threads {}", address, port, threads);
+    log->trace("RestServer::() called as {}:{} with {} threads", address, port, threads);
 }
 
 RestServer::~RestServer() {

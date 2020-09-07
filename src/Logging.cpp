@@ -18,6 +18,7 @@
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/async.h"
+#include "dup_dist_filter_sink.h" // our own for now
 
 using namespace nucleus;
 
@@ -26,10 +27,14 @@ Logging::Logging(const Config* config) : Logging(config->app_name, config->log_f
 
 Logging::Logging(const std::string& name, const std::string& log_file, const spdlog::level::level_enum log_level)
 {
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+	// TODO - how to avoid using the dup dist sink twice...
+
+    auto console_sink = std::make_shared<spdlog::sinks::dup_dist_filter_sink_st>(std::chrono::seconds(2));
+	console_sink->add_sink(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
     console_sink->set_level(spdlog::level::trace);
 
-    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_file, 1024*1024 * 20, 10);
+    auto file_sink = std::make_shared<spdlog::sinks::dup_dist_filter_sink_st>(std::chrono::seconds(2));
+	file_sink->add_sink(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_file, 1024*1024 * 20, 10));
     file_sink->set_level(spdlog::level::trace);
 
     std::array<spdlog::sink_ptr, 2> sinks {console_sink, file_sink};

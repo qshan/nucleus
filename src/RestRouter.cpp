@@ -16,6 +16,7 @@
 #include "RestRouter.hpp"
 #include <regex>
 #include <typeinfo>  // still needed for typeid
+#include "Utilities.hpp"
 
 using nlohmann::json;
 using namespace restinio;
@@ -116,7 +117,8 @@ RestRouter::Request(const restinio::request_handle_t &req,
 
     } catch ( const std::exception &exc) {
 
-        status = restinio::status_internal_server_error();
+        status = http_status_line_t{http_status_code_t(restinio::status_internal_server_error().status_code()),
+                                    fmt::format( "({}) {}", typeid(exc).name(), exc.what())};
 
     }
 
@@ -144,7 +146,10 @@ void RestRouter::RequestStart(const restinio::request_handle_t &req,
             std::stringstream headers;
             for(const auto & it : req->header()) {headers << it.name() << ":" << it.value() << "|";}
 
-            log->trace("RESTAPI START: {} || {} || {}", req->remote_endpoint(), headers.str(), req->body());
+            auto body = strleft_utf8(req->body(),200,  " (truncated in log...)");
+            body.erase(std::remove(body.begin(), body.end(), '\n'), body.end());
+
+            log->trace("RESTAPI START: {} || {} || {}", req->remote_endpoint(), headers.str(), body);
         }
 }
 
@@ -172,8 +177,8 @@ RestRouter::RequestEnd(const restinio::request_handle_t &req,
     auto elapsed_ms = (long) std::round(elapsed.count() * 1000);
 
     // Log request
+    // This is roughly Common Log Format with extra field for reason phrase. Eventually to separate into http log
     std::string username = session == nullptr ? "unknown" : session->username;
-
     log->log(log_level, "{} {} {} {}?{} {} {} {}", req->remote_endpoint(), username,
                   req->header().method(), path, req->header().query(),
                   status.status_code().raw_code(), elapsed_ms, status.reason_phrase());

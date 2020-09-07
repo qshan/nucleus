@@ -59,8 +59,18 @@ On Linux, you may need to build these from sources depending on your distributio
 There are utility scripts ```install-pmdk.sh``` and ```build-pmdk.sh```  in ```util/``` that can help 
 install (from package manager) or build these pre-requisites for Fedora.
 
-For Windows, you can install PMDK via vcpkg. See the instructions at the bottom
-of [this page](https://github.com/pmem/libpmemobj-cpp). Make sure to set your compile options to 64 bit too.
+For Windows, you can install PMDK and libpmemobj++ via vcpkg.
+```
+vcpkg install pmdk:x64-windows
+vcpkg integrate install
+vcpkg install libpmemobj-cpp:x64-windows
+
+```
+Add these options to CMAKE: 
+
+```-DCMAKE_TOOLCHAIN_FILE=d:/app/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows``` 
+
+Make sure to get the 64 bit versions and set your compile options to 64 bit too if not using CMAKE.
 
 ### Building the Nucleus "Hello World" app
 

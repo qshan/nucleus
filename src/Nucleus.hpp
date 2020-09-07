@@ -22,6 +22,7 @@
 
 #include <sstream>
 #include <filesystem>
+#include <typeinfo>
 
 namespace nucleus {
 
@@ -121,7 +122,7 @@ public:
             ctx->log->info("Check pmem is mounted, space available, permissions are set, layout is correct label");
 
         } catch (const std::exception &exc) {
-            ctx->log->critical("Exception: General: {}", exc.what());
+            ctx->log->critical("Exception caught by Nucleus: {}: {}", typeid(exc).name(), exc.what());
         }
 
         ctx->log->info("Exiting {} with exit status {}", ctx->config->app_name, exitCode);
@@ -151,7 +152,8 @@ private:
         sigaction(SIGTERM, &custom_handler, nullptr);
     #else
         if (!SetConsoleCtrlHandler( (PHANDLER_ROUTINE) win_ctrlc_handler, TRUE)) {
-            Logging::log()->warn("WARNING: Could not set CTRL-C handler");
+            //Logging::log()->warn("WARNING: Could not set CTRL-C handler");
+            std::cout << "WARNING: Could not set CTRL-C handler" << std::endl;
         }
     #endif
 

@@ -57,7 +57,7 @@ endfunction()
 # add a CMAKE test case
 function(add_test_case name )
 
-    message(STATUS "Adding CMAKE test case ${name} for ${APP_NAME}")
+    message(STATUS "Adding CMAKE test case ${name} for ${APP_NAME} in ${APP_DIR}")
 
     if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake)
         # being added from nucleus
@@ -82,6 +82,7 @@ function(add_test_case name )
     add_test(NAME "${TEST_NAME}"
             COMMAND ${CMAKE_COMMAND}
             -DTEST_ROOT_DIR=${NUCLEUS_SOURCE_DIR}/test
+            -DTEST_APP_DIR=${APP_DIR}
             -DTEST_CASE_HELPERS=${NUCLEUS_SOURCE_DIR}/test/test_case_helpers.cmake
             -DTEST_CASE_DIR=${cmake_source_dir}/test/${name}
             -DTEST_NAME=${TEST_NAME}
@@ -129,6 +130,7 @@ function(add_test_case_python name )
             ${CMAKE_COMMAND} -E env PYTHONPATH=${NUCLEUS_SOURCE_DIR}/test
             ${Python3_EXECUTABLE} ${cmake_source_dir}/test/${name}/test.py
             -DTEST_ROOT_DIR=${NUCLEUS_SOURCE_DIR}/test
+            -DTEST_APP_DIR=${APP_DIR}
             -DTEST_CASE_DIR=${cmake_source_dir}/test/${name}
             -DTEST_NAME=${TEST_NAME}
             -DTEST_EXE=$<TARGET_FILE:${APP_NAME}>

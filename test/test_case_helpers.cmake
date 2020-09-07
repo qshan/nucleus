@@ -62,14 +62,22 @@ endfunction()
 
 ## @brief - Create a temporary directory for pmem files.
 function(prepare_pmem_dir TEST_NAME)
+
     set(TEST_PMEM_DIR /tmp/pmem0/${TEST_NAME})
+
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TEST_PMEM_DIR})
+    if(IS_DIRECTORY ${TEST_PMEM_DIR})
+        message(FATAL_ERROR "Unable to remove PMem directory ${TEST_PMEM_DIR} - is another instance of the process running?")
+    endif()
+
     execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory   ${TEST_PMEM_DIR})
     if(NOT IS_DIRECTORY ${TEST_PMEM_DIR})
         message(FATAL_ERROR "Unable to create PMem directory ${TEST_PMEM_DIR}")
     endif()
+
     message(STATUS "Prepared PMEM dir for test ${TEST_NAME} with TEST_PMEM_DIR=${TEST_PMEM_DIR}")
     set(TEST_PMEM_DIR ${TEST_PMEM_DIR} PARENT_SCOPE)
+
 endfunction()
 
 # === Functions for setting and removing condition path file ===========================================================
@@ -107,4 +115,18 @@ endfunction()
 function(get_server_url servervar)
     # assumes these have been set in parent scope
     set(${servervar} ${TEST_SERVER_SCHEME}://${TEST_SERVER_ADDRESS}:${TEST_SERVER_PORT} PARENT_SCOPE)
+endfunction()
+
+function(get_background_task_vars)
+    if (WIN32)
+        set(BACKGROUND_TASK_SHELL "powershell.exe" PARENT_SCOPE)
+        set(BACKGROUND_TASK_START "${TEST_ROOT_DIR}/start_background.ps1"  PARENT_SCOPE)
+        set(BACKGROUND_TASK_KILL "Stop-Process -Id " PARENT_SCOPE)
+        set(BACKGROUND_TASK_CHECK "Get-Process -Id " PARENT_SCOPE)
+    else()
+        set(BACKGROUND_TASK_SHELL "${TEST_ROOT_DIR}/start_foreground.sh" PARENT_SCOPE)  # groups the args properly
+        set(BACKGROUND_TASK_START "${TEST_ROOT_DIR}/start_background.sh" PARENT_SCOPE)
+        set(BACKGROUND_TASK_KILL "kill -SIGINT " PARENT_SCOPE)
+        set(BACKGROUND_TASK_CHECK "kill -0 " PARENT_SCOPE)
+    endif()
 endfunction()

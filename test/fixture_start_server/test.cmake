@@ -8,15 +8,17 @@ prepare_pmem_dir(${TEST_NAME})
 
 set_nucleus_condition_path()
 
+get_background_task_vars()
+
 execute_process(
-    COMMAND ${TEST_ROOT_DIR}/start_background.sh "${TEST_EXE}
+    COMMAND ${BACKGROUND_TASK_SHELL} ${BACKGROUND_TASK_START} ${TEST_OUT_DIR} ${TEST_EXE}
                 --log_file=${TEST_OUT_DIR}/nucleus.log
-                --log_level=debug
+                --log_level=trace
                 --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
                 --pool_main_size=10
                 --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
                 --condition_path=${NUCLEUS_CONDITION_PATH}
-                ${TEST_EXE_EXTRA_START_VARS}"
+                ${TEST_EXE_EXTRA_START_VARS}
     COMMAND_ECHO STDOUT
     OUTPUT_VARIABLE PROCESS_ID
     TIMEOUT 30
@@ -24,5 +26,7 @@ execute_process(
 )
 
 message(STATUS "Process ID is ${PROCESS_ID}")
+
+file(WRITE "${TEST_OUT_DIR}/PID_PORT_${TEST_SERVER_PORT}.log" ${PROCESS_ID})
 
 test_case_end()

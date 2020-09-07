@@ -16,6 +16,9 @@
 #ifndef NUCLEUS_UTILS_HPP
 #define NUCLEUS_UTILS_HPP
 
+#include <string>
+std::string strleft_utf8(const std::string &str, size_t max_size, const std::string& continuation = "");
+
 // The following functions help make ENUMs with friendly names
 // Source: https://stackoverflow.com/a/52264973
 
@@ -28,5 +31,7 @@
 const char* const enumStringName[] = { \
     source(MAKE_STRINGS) \
     };
+
+
 
 #endif //NUCLEUS_UTILS_HPP

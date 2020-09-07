@@ -82,14 +82,24 @@ find_package(PkgConfig QUIET)
 set(LIBPMEMOBJ_CPP_REQUIRED_VERSION 1.8)
 set(LIBPMEMOBJ_REQUIRED_VERSION 1.6)
 
+#set (CMAKE_PREFIX_PATH "D:/app/vcpkg/packages/libpmemobj-cpp_x64-windows/share/libpmemobj++")
+
 if(PKG_CONFIG_FOUND)
     pkg_check_modules(LIBPMEMOBJ++ REQUIRED libpmemobj++>=${LIBPMEMOBJ_CPP_REQUIRED_VERSION})
+    set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
 else()
-    find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
-    message(STATUS "libpmemobj++ found without pkg-config (legacy)")
+    message(STATUS "libpmemobj++ search without pkg-config (legacy)")
+    #find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
+
+    # from vcpkg...
+    find_path(LIBPMEMOBJ_CPP_INCLUDE_DIRS "libpmemobj++/allocation_flag.hpp")
+    set (LIBPMEMOBJ++_INCLUDE_DIRS ${LIBPMEMOBJ_CPP_INCLUDE_DIRS})
+
+    find_library(PMDK_LIBPMEMOBJ_LIBRARY NAMES libpmemobj libpmemobj.so HINTS /usr/local/lib64/)
+    set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
 endif()
 
-set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
+
 # https://github.com/pmem/libpmemobj-cpp/issues/788
 message (STATUS "LIBPMEMOBJ++_INCLUDE_DIRS = ${LIBPMEMOBJ++_INCLUDE_DIRS}")
 message (STATUS "LIBPMEMOBJ++_LIBRARIES = ${LIBPMEMOBJ++_LIBRARIES} ")

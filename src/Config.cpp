@@ -54,7 +54,7 @@ Config::config_parse_args(int argc, char *argv[]) {
 
     if (argc == 0) { throw std::invalid_argument("Args must have at least 1 arg - the executable name"); }
 
-    set_name(std::filesystem::path(argv[0]).filename());
+    set_name(std::filesystem::path(argv[0]).filename().string());
 
     auto string_args = args_to_stringstream(argc, argv);
 
@@ -135,7 +135,7 @@ Config::args_to_stringstream(int argc, char *argv[] ) {
 
         // Make sure the parameter has an = sign
         if (arg_part.find('=') == std::string::npos) {
-            throw std::invalid_argument(fmt::format("Invalid command line parameter {}. "
+            throw std::invalid_argument(fmt::format("Invalid command line parameter '{}'. "
                                                     "Format is --setting_name=value", arg_part));
         }
 

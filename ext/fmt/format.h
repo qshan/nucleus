@@ -2194,7 +2194,9 @@ struct auto_id {};
 template <typename Context>
 FMT_CONSTEXPR typename Context::format_arg get_arg(Context& ctx, int id) {
   auto arg = ctx.arg(id);
-  if (!arg) ctx.on_error("argument index out of range");
+  if (!arg) {  // AxoMem change to track down index errors. Set breakpoint here and look at call stack
+  	ctx.on_error("argument index out of range");
+  }
   return arg;
 }
 
@@ -2678,7 +2680,7 @@ class format_string_checker {
   enum { num_args = sizeof...(Args) };
 
   FMT_CONSTEXPR void check_arg_id() {
-    if (arg_id_ >= num_args) context_.on_error("argument index out of range");
+    if (arg_id_ >= num_args) context_.on_error("argument index out of my range");
   }
 
   // Format specifier parsing function.

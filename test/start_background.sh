@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
-$1 "${@:2}" 2>/dev/null 1>/dev/null 0</dev/null &
+# This file must be blank output except for the pid. Its used to kill later...
+$2 "${@:3}" 2>"$1/stderr.log" 1>"$1/stdout.log" 0</dev/null &
 echo "$!"
