@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see http://www.gnu.org/licenses/
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
 project(nucleus)
 
 set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
@@ -31,7 +31,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
     add_definitions("/W3" "/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
-    add_compile_options( "$<$<CONFIG:RELEASE>:/O2>")
+    add_compile_options( "$<$<CONFIG:RELEASE>:/O2>" "/MP")
 else()
     add_definitions("-Wall -Wno-sign-compare" ) # "-Wextra" "-Werror"
     add_compile_options("$<$<CONFIG:RELEASE>:-O3>")
@@ -77,7 +77,7 @@ endif()
 
 include(FindThreads)
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig)
 
 set(LIBPMEMOBJ_CPP_REQUIRED_VERSION 1.8)
 set(LIBPMEMOBJ_REQUIRED_VERSION 1.6)
@@ -93,10 +93,14 @@ else()
 
     # from vcpkg...
     find_path(LIBPMEMOBJ_CPP_INCLUDE_DIRS "libpmemobj++/allocation_flag.hpp")
-    set (LIBPMEMOBJ++_INCLUDE_DIRS ${LIBPMEMOBJ_CPP_INCLUDE_DIRS})
+    #set (LIBPMEMOBJ++_INCLUDE_DIRS ${LIBPMEMOBJ_CPP_INCLUDE_DIRS})
+	set (LIBPMEMOBJ++_INCLUDE_DIRS "D:\\app\\vcpkg\\packages\\libpmemobj-cpp_x64-windows\\include"
+									"D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\include")
 
     find_library(PMDK_LIBPMEMOBJ_LIBRARY NAMES libpmemobj libpmemobj.so HINTS /usr/local/lib64/)
-    set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
+    #set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
+	set (LIBPMEMOBJ++_LIBRARIES "D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\lib\\libpmemobj.lib")
+	
 endif()
 
 
