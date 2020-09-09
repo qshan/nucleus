@@ -17,7 +17,9 @@
 :: This is an example cmake-based build script for Windows. Current assumed environment:
 ::
 ::     Cmake - https://cmake.org/download/
-::     Visual Studio 2017   or    Visual Studio Build Tools 2017
+::     Visual Studio 2019   or    Visual Studio Build Tools 2019
+::     Last tested with Visual Studio 2019 Community Edition 16.7.3
+::     With Windows 10 SDK v2004
 ::
 :: Copy and customise to your environment. Any cmd files starting with build- are ignored by git
 :: Please contribute back any substantial changes, bugs, issues or success with new versions of Visual Studio
@@ -45,7 +47,7 @@ IF EXIST build (
     TIMEOUT 10
 )
 ECHO.
-cmake . -Bbuild -G "Visual Studio 15 2017 Win64" -DCMAKE_TOOLCHAIN_FILE=%VCPKG_CMAKE% -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake . -Bbuild -G "Visual Studio 16 2019" -A x64 -DCMAKE_TOOLCHAIN_FILE=%VCPKG_CMAKE% -DVCPKG_TARGET_TRIPLET=x64-windows
 ECHO.
 ECHO CMAKE Configuration complete. To build, run BUILD with no parameters
 ECHO.
@@ -64,14 +66,14 @@ IF EXIST build (
     GOTO END
 )
 ECHO.
-msbuild build\ALL_BUILD.vcxproj
+cmake . -Bbuild --build --config Debug
 
 GOTO END
 REM =======================================================
 
 :DOUBLECLICK_ERR
 :TOOLS_ERR
-ECHO This script needs to be run from within the x64 Native Tools Command Prompt for VS 2017  command window
+ECHO This script needs to be run from within the x64 Native Tools Command Prompt for VS 2019  command window
 GOTO END
 
 :UNKNOWN_PARM_ERR

@@ -35,7 +35,7 @@ function(nucleus_init nucleus_directory)
         getrandomport(TEST_SERVER_PORT)
         message(STATUS "Nucleus::init allocating new server port ${TEST_SERVER_PORT} ")
     else()
-        message(STATUS "Nucleus::init using existing server port ${TEST_SERVER_PORT} ")
+        # message(STATUS "Nucleus::init using existing server port ${TEST_SERVER_PORT} ")
     endif()
 
     if (NOT TEST_SERVER_SCHEME)
@@ -48,7 +48,7 @@ function(nucleus_init nucleus_directory)
 
     set(TEST_SERVER_PORT ${TEST_SERVER_PORT} PARENT_SCOPE)
 
-    message(STATUS "Nucleus CMake environment initialised in ${nucleus_directory}")
+    # message(STATUS "Nucleus CMake environment initialised in ${nucleus_directory}")
 
 endfunction()
 

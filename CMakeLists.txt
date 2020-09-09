@@ -32,6 +32,15 @@ set(CMAKE_CXX_STANDARD 17)
 if(MSVC)
     add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
     add_compile_options( "$<$<CONFIG:RELEASE>:/O2>" "/MP")
+    if (NOT CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+        message(STATUS "=== ERROR =========================")
+        message(STATUS "Set VCPKG on command line, ie:" " -DCMAKE_TOOLCHAIN_FILE=d:/app/vcpkg/scripts/buildsystems/vcpkg.cmake"
+                " -DVCPKG_TARGET_TRIPLET=x64-windows" " -G \"Visual Studio 16 2019\"" " -A x64")
+        message(FATAL_ERROR "ToolChain setting missing or not including vcpkg path - ${CMAKE_TOOLCHAIN_FILE}")
+
+    else()
+        message(STATUS "ToolChain file is ${CMAKE_TOOLCHAIN_FILE}")
+    endif()
 else()
     add_definitions("-Wall -Wno-sign-compare" ) # "-Wextra" "-Werror"
     add_compile_options("$<$<CONFIG:RELEASE>:-O3>")
@@ -64,6 +73,7 @@ if (COVERAGE)
 endif()
 
 # Setting default build type
+# Note that for MSBuild need to specify on command line, eg: cmake --build . --config Release
 if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting CMAKE_BUILD_TYPE to DEBUG")
     set(CMAKE_BUILD_TYPE "Debug")
@@ -72,6 +82,10 @@ endif (NOT CMAKE_BUILD_TYPE)
 if(CMAKE_BUILD_TYPE EQUAL DEBUG)
     add_definitions("-g" )  #-g add GDB Native extras
 endif()
+
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
 
 # === Set dependencies =================================================================================================
 
@@ -93,13 +107,13 @@ else()
 
     # from vcpkg...
     find_path(LIBPMEMOBJ_CPP_INCLUDE_DIRS "libpmemobj++/allocation_flag.hpp")
-    #set (LIBPMEMOBJ++_INCLUDE_DIRS ${LIBPMEMOBJ_CPP_INCLUDE_DIRS})
-	set (LIBPMEMOBJ++_INCLUDE_DIRS "D:\\app\\vcpkg\\packages\\libpmemobj-cpp_x64-windows\\include"
-									"D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\include")
+    set (LIBPMEMOBJ++_INCLUDE_DIRS ${LIBPMEMOBJ_CPP_INCLUDE_DIRS})
+	#set (LIBPMEMOBJ++_INCLUDE_DIRS "D:\\app\\vcpkg\\packages\\libpmemobj-cpp_x64-windows\\include"
+	#								"D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\include")
 
     find_library(PMDK_LIBPMEMOBJ_LIBRARY NAMES libpmemobj libpmemobj.so HINTS /usr/local/lib64/)
-    #set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
-	set (LIBPMEMOBJ++_LIBRARIES "D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\lib\\libpmemobj.lib")
+    set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
+	#set (LIBPMEMOBJ++_LIBRARIES "D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\lib\\libpmemobj.lib")
 	
 endif()
 
@@ -167,11 +181,12 @@ function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
                                       ${LIBPMEMOBJ++_LIBRARIES}
                                       ${CMAKE_THREAD_LIBS_INIT} )
 
+
     # Copy the target to the bin directory post build for easier use
-    add_custom_command(TARGET ${APP_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
-    )
+    #add_custom_command(TARGET ${APP_NAME} POST_BUILD
+    #        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
+    #        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
+    #)
 
     add_common_tests()
 
@@ -342,3 +357,10 @@ add_custom_target(check
         COMMAND ${CMAKE_COMMAND} --build . --target test
         DEPENDS ${NUCLEUS_ALL_TARGETS}
 )
+
+message (STATUS "=== CONFIGURATION DONE =======================================")
+message(STATUS "CMAKE_BUILD_TYPE default is ${CMAKE_BUILD_TYPE}")
+if (WIN32)
+    message(STATUS "To compile, use:   cmake --build . [--config Debug|Release] --parallel 10")
+endif()
+message (STATUS "==============================================================")
