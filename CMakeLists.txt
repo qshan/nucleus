@@ -30,7 +30,7 @@ set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
-    add_definitions("/W3" "/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
+    add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
     add_compile_options( "$<$<CONFIG:RELEASE>:/O2>" "/MP")
 else()
     add_definitions("-Wall -Wno-sign-compare" ) # "-Wextra" "-Werror"
