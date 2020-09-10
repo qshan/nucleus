@@ -69,7 +69,7 @@ function(prepare_pmem_dir TEST_NAME)
         if (WIN32)
             set(TEST_PMEM_DIR $ENV{TMP}/pmem0-ctest/${TEST_NAME})
         else()
-            set(TEST_PMEM_DIR $ENV{TMPDIR}/pmem0-ctest/${TEST_NAME})
+            set(TEST_PMEM_DIR /tmp/pmem0-ctest/${TEST_NAME})  #$ENV{TMPDIR} seems missing on Ubuntu CI server?
         endif()
     endif()
 
