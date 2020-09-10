@@ -351,16 +351,14 @@ add_custom_target(docs
 )
 
 add_custom_target(check
-        # issue here - parallel builds
-        # message(STATUS "Building and Testing targets" "${NUCLEUS_ALL_TARGETS}")
-        # COMMAND ${CMAKE_COMMAND} --parallel --build .
-        COMMAND ${CMAKE_COMMAND} --build . --target test
+        COMMAND ${CMAKE_COMMAND} --build .
+        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
         DEPENDS ${NUCLEUS_ALL_TARGETS}
 )
 
 message (STATUS "=== CONFIGURATION DONE =======================================")
 message(STATUS "CMAKE_BUILD_TYPE default is ${CMAKE_BUILD_TYPE}")
 if (WIN32)
-    message(STATUS "To compile, use:   cmake --build . [--config Debug|Release] --parallel 10")
+    message(STATUS "To compile, use:   cmake --build . [--config Debug|Release]")
 endif()
 message (STATUS "==============================================================")

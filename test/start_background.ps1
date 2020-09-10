@@ -18,5 +18,5 @@ for ($i=2; $i -le $numOfArgs; $i++)
 #        Or switch to python...
 
 #$app = Start-Process -passthru -FilePath "$exe" -ArgumentList "$exe_args" -RedirectStandardOutput "$out_dir/stdout.log" -RedirectStandardError "$out_dir/stderr.log"
-$app = Start-Process -passthru -FilePath "$exe" -ArgumentList "$exe_args"
+$app = Start-Process -passthru -FilePath "$exe" -ArgumentList "$exe_args" -WindowStyle Hidden
 Write-Host $app.Id

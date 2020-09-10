@@ -83,6 +83,7 @@ function(add_test_case name )
             COMMAND ${CMAKE_COMMAND}
             -DTEST_ROOT_DIR=${NUCLEUS_SOURCE_DIR}/test
             -DTEST_APP_DIR=${APP_DIR}
+            -DTEST_PMEM_DIRS=${APP_PMEM_DIRS}
             -DTEST_CASE_HELPERS=${NUCLEUS_SOURCE_DIR}/test/test_case_helpers.cmake
             -DTEST_CASE_DIR=${cmake_source_dir}/test/${name}
             -DTEST_NAME=${TEST_NAME}
@@ -97,6 +98,8 @@ function(add_test_case name )
             -P ${cmake_source_dir}/test/${name}/test.cmake
             ${EXTRA_TEST_ARGS}
     )
+
+    set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT PMEM_IS_PMEM_FORCE=1)
 
 endfunction()
 
@@ -131,6 +134,7 @@ function(add_test_case_python name )
             ${Python3_EXECUTABLE} ${cmake_source_dir}/test/${name}/test.py
             -DTEST_ROOT_DIR=${NUCLEUS_SOURCE_DIR}/test
             -DTEST_APP_DIR=${APP_DIR}
+            -DTEST_PMEM_DIRS=${APP_PMEM_DIRS}
             -DTEST_CASE_DIR=${cmake_source_dir}/test/${name}
             -DTEST_NAME=${TEST_NAME}
             -DTEST_EXE=$<TARGET_FILE:${APP_NAME}>
@@ -141,6 +145,8 @@ function(add_test_case_python name )
             -DTEST_EXE_EXTRA_START_VARS="${TEST_EXE_EXTRA_START_VARS}"
             ${EXTRA_TEST_ARGS}
             WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} )
+
+    set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT PMEM_IS_PMEM_FORCE=1)
 
 endfunction()
 

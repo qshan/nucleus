@@ -63,7 +63,17 @@ endfunction()
 ## @brief - Create a temporary directory for pmem files.
 function(prepare_pmem_dir TEST_NAME)
 
-    set(TEST_PMEM_DIR /tmp/pmem0/${TEST_NAME})
+    if (TEST_PMEM_DIRS)
+        set(TEST_PMEM_DIR ${TEST_PMEM_DIRS}/${TEST_NAME})
+    else()
+        if (WIN32)
+            set(TEST_PMEM_DIR $ENV{TMP}/pmem0-ctest/${TEST_NAME})
+        else()
+            set(TEST_PMEM_DIR $ENV{TMPDIR}/pmem0-ctest/${TEST_NAME})
+        endif()
+    endif()
+
+    message(STATUS "PREPARE_PMEM_DIR is ${TEST_PMEM_DIR}")
 
     execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory ${TEST_PMEM_DIR})
     if(IS_DIRECTORY ${TEST_PMEM_DIR})
