@@ -356,6 +356,12 @@ add_custom_target(check
         DEPENDS ${NUCLEUS_ALL_TARGETS}
 )
 
+add_custom_target(checkfailed
+        COMMAND ${CMAKE_COMMAND} --build .
+        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE} --rerun-failed
+        DEPENDS ${NUCLEUS_ALL_TARGETS}
+)
+
 message (STATUS "=== CONFIGURATION DONE =======================================")
 message(STATUS "CMAKE_BUILD_TYPE default is ${CMAKE_BUILD_TYPE}")
 if (WIN32)
