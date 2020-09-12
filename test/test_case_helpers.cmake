@@ -95,7 +95,7 @@ endfunction()
 ## @brief By setting the condition path, Nucleus will keep the app open until the file is cleared
 function(set_nucleus_condition_path)
 
-    set(NUCLEUS_CONDITION_PATH /tmp/nucleus_condition_path_file__${TEST_SERVER_PORT})
+    set(NUCLEUS_CONDITION_PATH ${CMAKE_BINARY_DIR}/condition_path_file_${APP_NAME}_${TEST_SERVER_PORT})
     execute_process(COMMAND ${CMAKE_COMMAND} -E touch ${NUCLEUS_CONDITION_PATH} RESULT_VARIABLE RESULT)
     if(NOT EXISTS ${NUCLEUS_CONDITION_PATH})
         message(FATAL_ERROR "Unable to set condition path file ${NUCLEUS_CONDITION_PATH} due to error ${RESULT}")
@@ -109,7 +109,7 @@ endfunction()
 ## @brief By removing the condition_path, Nucleus will stop.
 function(clear_nucleus_condition_path)
 
-    set(NUCLEUS_CONDITION_PATH /tmp/nucleus_condition_path_file__${TEST_SERVER_PORT})
+    set(NUCLEUS_CONDITION_PATH ${CMAKE_BINARY_DIR}/condition_path_file_${APP_NAME}_${TEST_SERVER_PORT})
 
     if(NOT EXISTS ${NUCLEUS_CONDITION_PATH})
         message(FATAL_ERROR "Unable to clear condition path file as it is already cleared or doesn't exist."
