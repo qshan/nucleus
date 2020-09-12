@@ -83,23 +83,23 @@ public:
 
         auto app = pool_manager.pool().root()->app;
 
-        if (GetAppState() == nucleus::INITIALIZING) {
+        if (GetAppState() == AppState::INITIALIZING) {
             throw exceptions::app_error("AppManager: App failed initialization last time. "
                                      "Delete pool and try again");
         }
 
-        if (GetAppState() == nucleus::NEW) {
+        if (GetAppState() == AppState::NEW) {
             ctx->log->debug("AppManager: App initializing after first persistence");
-            SetAppState(nucleus::INITIALIZING);
+            SetAppState(AppState::INITIALIZING);
             app->Initialize(ctx);
         }
 
-        if (GetAppState() != nucleus::INITIALIZING && GetAppState() != nucleus::STOPPED ) {
+        if (GetAppState() != AppState::INITIALIZING && GetAppState() != AppState::STOPPED ) {
             ctx->log->warn("AppManager: Abnormal App State detected."
                                  "Starting App however application state may be compromised");
         }
 
-        SetAppState(nucleus::STARTING);
+        SetAppState(AppState::STARTING);
 
         ctx->log->trace("AppManager is calling app->Start()");
 
@@ -110,14 +110,14 @@ public:
 
         ctx->rest_server->Start();
 
-        SetAppState(nucleus::RUNNING);
+        SetAppState(AppState::RUNNING);
 
         ctx->log->info("*** Server is running for {}", ctx->config->app_name);
         ctx->log->info("*** Press CTRL-C once to shutdown. "
                             "May require up to 3 presses for abnormal termination");
 
         // *** This Loop holds overall run state on main thread **************************
-        while (GetAppState() == nucleus::RUNNING){
+        while (GetAppState() == AppState::RUNNING){
 
             if (!ctx->rest_server->last_error().empty()) {
                 Exit(fmt::format("ReST Server has experienced an error: {}. Exiting",
@@ -136,7 +136,7 @@ public:
         ctx->rest_server->Stop(); // Reset unique ptr will close the server
 
         app->Stop();
-        SetAppState(nucleus::STOPPED);
+        SetAppState(AppState::STOPPED);
         ctx->log->info("AppManager Run now exiting with AppState {}", GetAppStateName());
 
     }
@@ -167,12 +167,12 @@ private:
 
     std::string GetAppStateName()
     {
-        return AppStateNames[pool_manager.pool().root()->app_state];
+        return AppStateNames[static_cast<int>(pool_manager.pool().root()->app_state.get_ro())];
     }
 
     [[nodiscard]] std::string GetAppStateName(AppState state) const
     {
-        return AppStateNames[state];
+        return AppStateNames[static_cast<int>(state)];
     }
 
     /**
@@ -188,7 +188,7 @@ private:
     void Exit(const std::string &reason) {
         ctx->log->info("AppManager Exit requested. Current App State is {}. Reason {}",
                              GetAppStateName(), reason);
-        SetAppState(nucleus::EXITING);
+        SetAppState(AppState::EXITING);
     };
 
     void CheckConditionPathExists() {
