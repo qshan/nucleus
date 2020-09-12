@@ -351,13 +351,13 @@ add_custom_target(docs
 )
 
 add_custom_target(check
-        COMMAND ${CMAKE_COMMAND} --build .
+        #COMMAND ${CMAKE_COMMAND} --build .
         COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
         DEPENDS ${NUCLEUS_ALL_TARGETS}
 )
 
 add_custom_target(checkfailed
-        COMMAND ${CMAKE_COMMAND} --build .
+        #COMMAND ${CMAKE_COMMAND} --build .
         COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE} --rerun-failed
         DEPENDS ${NUCLEUS_ALL_TARGETS}
 )
