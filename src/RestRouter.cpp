@@ -129,7 +129,7 @@ RestRouter::Request(const restinio::request_handle_t &req,
     // return the response;
     return req->create_response(status)
             .append_header( restinio::http_field_t::access_control_allow_origin, "*" )
-            .append_header(restinio::http_field_t::content_type, "application/json")
+            .append_header(restinio::http_field_t::content_type, "application/json; charset=utf-8")
             .set_body( resp.dump())
             .done();
 
