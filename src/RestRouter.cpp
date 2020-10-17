@@ -69,12 +69,13 @@ RestRouter::add(restinio::http_method_id_t method,
     log->debug("RestRouter adding route {} {}", method.c_str(),  route_path);
 
     link_route_options(method, route_path, options);
+    auto option_id = options->option_set_id;
 
     router->add_handler(method, route_path,
-                        [this, callback, route_path](const restinio::request_handle_t &req,
+                        [this, callback, route_path, option_id](const restinio::request_handle_t &req,
                                                 const restinio::router::route_params_t &params) {
 
-        return Request(req, params, callback);
+        return Request(req, params, callback, option_id);
 
     });
 
@@ -83,11 +84,13 @@ RestRouter::add(restinio::http_method_id_t method,
 restinio::request_handling_status_t
 RestRouter::Request(const restinio::request_handle_t &req,
                     const restinio::router::route_params_t &params,
-                    route_callback_t callback) {
+                    route_callback_t callback,
+                    size_t option_id) {
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start;
 
-    auto options = get_route_options(req, params);
+    std::cout << "OPTION ID IS " << option_id << std::endl;
+    auto options = get_route_options(option_id);
 
     RequestStart(req, options, start);
 
@@ -228,9 +231,9 @@ RestRouter::default_route_options() {
 }
 
 route_options_t
-RestRouter::get_route_options(const req_t& req, const params_t& params) {
+RestRouter::get_route_options(size_t option_id) {
 
-    auto option_id = route_option_map[fmt::format("{}__{}", req->header().method(), params.match())];
+    //auto option_id = route_option_map[fmt::format("{}__{}", req->header().method(), params.match())];
 
     auto i = route_options.find(option_id);
     if(i != route_options.end()) {
