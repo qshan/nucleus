@@ -89,7 +89,6 @@ RestRouter::Request(const restinio::request_handle_t &req,
 
     std::chrono::time_point<std::chrono::high_resolution_clock> start;
 
-    std::cout << "OPTION ID IS " << option_id << std::endl;
     auto options = get_route_options(option_id);
 
     RequestStart(req, options, start);
