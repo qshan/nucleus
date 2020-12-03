@@ -56,6 +56,16 @@ struct http_parser_ctx_t
 	//! \{
 	std::string m_current_field_name;
 	bool m_last_was_value{ true };
+
+	/*!
+	 * @since v.0.6.9
+	 */
+	bool m_leading_headers_completed{ false };
+
+	/*!
+	 * @since v.0.6.9
+	 */
+	chunked_input_info_block_t m_chunked_info_block;
 	//! \}
 
 	//! Flag: is http message parsed completely.
@@ -69,7 +79,29 @@ struct http_parser_ctx_t
 		m_body.clear();
 		m_current_field_name.clear();
 		m_last_was_value = true;
+		m_leading_headers_completed = false;
 		m_message_complete = false;
+	}
+
+	//! Creates an instance of chunked_input_info if there is an info
+	//! about chunks in the body.
+	/*!
+	 * @since v.0.6.9
+	 */
+	RESTINIO_NODISCARD
+	chunked_input_info_unique_ptr_t
+	make_chunked_input_info_if_necessary()
+	{
+		chunked_input_info_unique_ptr_t result;
+
+		if( !m_chunked_info_block.m_chunks.empty() ||
+				0u != m_chunked_info_block.m_trailing_fields.fields_count() )
+		{
+			result = std::make_unique< chunked_input_info_t >(
+					std::move( m_chunked_info_block ) );
+		}
+
+		return result;
 	}
 };
 
@@ -114,6 +146,16 @@ create_parser_settings() noexcept
 	parser_settings.on_body =
 		[]( http_parser * parser, const char * at, size_t length ) -> int {
 			return restinio_body_cb( parser, at, length );
+		};
+
+	parser_settings.on_chunk_header =
+		[]( http_parser * parser ) -> int {
+			return restinio_chunk_header_cb( parser );
+		};
+
+	parser_settings.on_chunk_complete =
+		[]( http_parser * parser ) -> int {
+			return restinio_chunk_complete_cb( parser );
 		};
 
 	parser_settings.on_message_complete =
@@ -579,6 +621,7 @@ class connection_t final
 								request_id,
 								std::move( parser_ctx.m_header ),
 								std::move( parser_ctx.m_body ),
+								parser_ctx.make_chunked_input_info_if_necessary(),
 								shared_from_concrete< connection_base_t >(),
 								m_remote_endpoint ) ) )
 					{
@@ -689,6 +732,7 @@ class connection_t final
 						request_id,
 						std::move( parser_ctx.m_header ),
 						std::move( parser_ctx.m_body ),
+						parser_ctx.make_chunked_input_info_if_necessary(),
 						shared_from_concrete< connection_base_t >(),
 						m_remote_endpoint) ) )
 			{
