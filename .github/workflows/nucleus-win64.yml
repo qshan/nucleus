@@ -50,8 +50,10 @@ jobs:
       - name: Install Deps
         run: |
           vcpkg install libpmemobj-cpp:x64-windows
+          vcpkg install pmdk:x64-windows
           vcpkg update
           vcpkg upgrade libpmemobj-cpp:x64-windows --no-dry-run
+          vcpkg upgrade pmdk:x64-windows --no-dry-run
 
       - name: vcpkg integrate install
         run: vcpkg integrate install
