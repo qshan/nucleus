@@ -30,12 +30,12 @@ jobs:
 
       - name: get system dev envt data
         run: |
-          systeminfo
-          set
-          path
-          git --version
-          dir
+          Get-ComputerInfo
+          dir env:
+          gdr -PSProvider 'FileSystem'
+          Get-Location
           ipconfig /all
+          git --version
 
       - name: Cache vcpkg packages
         uses: actions/cache@v1
