@@ -31,11 +31,13 @@ jobs:
       - name: get system dev envt data
         run: |
           Get-ComputerInfo
-          dir env:
+          gci env:* | sort-object name
           gdr -PSProvider 'FileSystem'
+          Get-Service
           Get-Location
           ipconfig /all
           git --version
+          ping www.google.com -n 2
 
       - name: Clone the git repo
         uses: actions/checkout@v2
