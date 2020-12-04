@@ -70,6 +70,12 @@ jobs:
           python -m pip install keyring keyrings-alt requests
           python -m pip list
 
+      - name: Check python
+        uses: actions/setup-python@v2
+        run: |
+          python --version
+          python -c "import requests"
+
       - name: vcpkg integrate install
         run: vcpkg integrate install
 
