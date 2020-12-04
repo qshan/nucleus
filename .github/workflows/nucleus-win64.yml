@@ -28,6 +28,15 @@ jobs:
       - name: Update PATH
         run: echo "${env:MSBUILD}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+      - name: get system dev envt data
+        run: |
+          systeminfo
+          set
+          path
+          git --version
+          dir
+          ipconfig /all
+
       - name: Cache vcpkg packages
         uses: actions/cache@v1
         id: cache-vcpkg-packages
