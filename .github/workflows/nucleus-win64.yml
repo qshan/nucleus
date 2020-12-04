@@ -55,6 +55,9 @@ jobs:
           vcpkg upgrade libpmemobj-cpp:x64-windows --no-dry-run
           vcpkg upgrade pmdk:x64-windows --no-dry-run
 
+      - name: install-python-deps
+        run: python -m pip install keyring keyrings-alt requests
+
       - name: vcpkg integrate install
         run: vcpkg integrate install
 
