@@ -98,10 +98,10 @@ set(LIBPMEMOBJ_REQUIRED_VERSION 1.6)
 
 #set (CMAKE_PREFIX_PATH "D:/app/vcpkg/packages/libpmemobj-cpp_x64-windows/share/libpmemobj++")
 
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(LIBPMEMOBJ++ REQUIRED libpmemobj++>=${LIBPMEMOBJ_CPP_REQUIRED_VERSION})
-    set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
-else()
+#if(PKG_CONFIG_FOUND)
+#    pkg_check_modules(LIBPMEMOBJ++ REQUIRED libpmemobj++>=${LIBPMEMOBJ_CPP_REQUIRED_VERSION})
+#    set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
+#else()
     message(STATUS "libpmemobj++ search without pkg-config (legacy)")
     #find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
 
@@ -115,7 +115,7 @@ else()
     set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
 	#set (LIBPMEMOBJ++_LIBRARIES "D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\lib\\libpmemobj.lib")
 	
-endif()
+#endif()
 
 
 # https://github.com/pmem/libpmemobj-cpp/issues/788
