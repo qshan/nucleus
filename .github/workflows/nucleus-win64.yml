@@ -25,40 +25,39 @@ jobs:
       matrix:
         CONFIG: [Debug]
     steps:
-      - name: Update PATH
+      - name: update path
         run: echo "${env:MSBUILD}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: get system dev envt data
         run: |
           Get-ComputerInfo
           gci env:* | sort-object name
-          gdr -PSProvider 'FileSystem'
-          Get-Service
-          Get-Location
-          ipconfig /all
-          git --version
-          ping www.google.com -n 2
+#          gdr -PSProvider 'FileSystem'
+#          Get-Service
+#          Get-Location
+#          ipconfig /all
+#          git --version
 
-      - name: Clone the git repo
+      - name: clone git repo
         uses: actions/checkout@v2
         with:
           submodules: recursive
 
-      - name: Cache vcpkg packages
+      - name: cache vcpkg packages
         uses: actions/cache@v1
         id: cache-vcpkg-packages
         with:
           path: C:/vcpkg/packages
           key:  vcpkg-packages-45e5a67
 
-      - name: Cache vcpkg installed
+      - name: cache vcpkg installed
         uses: actions/cache@v1
         id: cache-vcpkg-installed
         with:
           path: C:/vcpkg/installed
           key:  vcpkg-installed-45e5a67
 
-      - name: Install Deps
+      - name: install vcpkg dependencies
         run: |
           vcpkg install libpmemobj-cpp:x64-windows
           vcpkg install pmdk:x64-windows
@@ -69,10 +68,10 @@ jobs:
       - name: vcpkg integrate install
         run: vcpkg integrate install
 
-      - name: Setup python
+      - name: setup python
         uses: actions/setup-python@v2
 
-      - name: install-python-deps
+      - name: install python deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install keyring keyrings-alt requests
@@ -80,16 +79,16 @@ jobs:
           python --version
           python -c "import requests"
 
-      - name: Configure
+      - name: configure
         run: cmake . -Bbuild
           -G "${env:GENERATOR}"
           -A "${env:ARCH}"
           -DCMAKE_TOOLCHAIN_FILE="${env:CMAKE_TOOLCHAIN_FILE}"
           -DCMAKE_INSTALL_PREFIX="${env:CMAKE_INSTALL_PREFIX}"
 
-      - name: Build
+      - name: build
         run: msbuild build/ALL_BUILD.vcxproj /property:Configuration=${{ matrix.CONFIG }} /verbosity:minimal /m
 
-      - name: Tests
+      - name: tests
         working-directory: build
         run: ctest -C ${{ matrix.CONFIG }} --output-on-failure --timeout 540
