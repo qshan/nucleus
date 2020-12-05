@@ -36,6 +36,10 @@ jobs:
           Get-Location
           ipconfig /all
           git --version
+      - name: Clone the git repo
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       - name: Cache vcpkg packages
         uses: actions/cache@v1
@@ -51,11 +55,6 @@ jobs:
           path: C:/vcpkg/installed
           key:  vcpkg-installed-45e5a67
 
-      - name: Clone the git repo
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
       - name: Install Deps
         run: |
           vcpkg install libpmemobj-cpp:x64-windows
@@ -63,8 +62,10 @@ jobs:
           vcpkg update
           vcpkg upgrade libpmemobj-cpp:x64-windows --no-dry-run
           vcpkg upgrade pmdk:x64-windows --no-dry-run
+      - name: vcpkg integrate install
+        run: vcpkg integrate install
 
-      - name: Check python
+      - name: Setup python
         uses: actions/setup-python@v2
 
       - name: install-python-deps
@@ -72,10 +73,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install keyring keyrings-alt requests
           python -m pip list
-
-      - name: vcpkg integrate install
-        run: vcpkg integrate install
-
+          python --version
+          python -c "import requests"
       - name: Configure
         run: cmake . -Bbuild
           -G "${env:GENERATOR}"
