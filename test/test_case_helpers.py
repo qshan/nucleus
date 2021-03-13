@@ -80,7 +80,7 @@ class test_case_utils:
     @staticmethod
     def get_server_url():
         scheme = "http" if "TEST_SERVER_SCHEME" not in ctest else ctest.TEST_SERVER_SCHEME
-        address = "localhost" if "TEST_SERVER_ADDRESS" not in ctest else ctest.TEST_SERVER_ADDRESS
+        address = "127.0.0.1" if "TEST_SERVER_ADDRESS" not in ctest else ctest.TEST_SERVER_ADDRESS
         port = "8080" if "TEST_SERVER_PORT" not in ctest else ctest.TEST_SERVER_PORT
         return f"{scheme}://{address}:{port}"
 

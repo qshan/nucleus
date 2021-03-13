@@ -43,7 +43,7 @@ function(nucleus_init nucleus_directory)
     endif()
 
     if (NOT TEST_SERVER_ADDRESS)
-        set(TEST_SERVER_ADDRESS localhost PARENT_SCOPE)
+        set(TEST_SERVER_ADDRESS 127.0.0.1 PARENT_SCOPE)
     endif()
 
     set(TEST_SERVER_PORT ${TEST_SERVER_PORT} PARENT_SCOPE)
