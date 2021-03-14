@@ -16,7 +16,8 @@ IF(TEST_COVERAGE_ENABLED)
         message(STATUS "Coverage executed in ${TEST_COVERAGE_DIR}")
 
         if(NOT EXISTS ${TEST_COVERAGE_DIR}/main.cpp.gcov)
-            message(FATAL_ERROR "No GCOV results - can't find ${TEST_COVERAGE_DIR}/main.cpp.gcov")
+            message(FATAL_ERROR "No GCOV results - can't find ${TEST_COVERAGE_DIR}/main.cpp.gcov"
+                    " - are you sure you ran in DEBUG mode?")
         endif()
 
     else()
