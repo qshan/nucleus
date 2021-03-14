@@ -107,8 +107,8 @@ class test_case_utils:
         if first == second:
             return True
         else:
-            print(f"\nERROR Response code different: First: {first} {requests.status_codes._codes[first][0]}"
-                  f" | Second: {second} {requests.status_codes._codes[second][0]}\n")
+            print(f"\nERROR Response code different: Got: {first} {requests.status_codes._codes[first][0]}"
+                  f" | Expected: {second} {requests.status_codes._codes[second][0]}\n")
             return False
 
     @staticmethod
