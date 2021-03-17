@@ -116,6 +116,7 @@ public:
                 std::move( handler ) );
     }
 
+    static nlohmann::json get_json_body(request_handle_t req);
 
 protected:
 

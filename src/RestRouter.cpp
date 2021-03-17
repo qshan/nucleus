@@ -278,5 +278,29 @@ void RestRouter::non_matched_request_handler(restinio::router::non_matched_reque
 
 }
 
+nlohmann::json
+RestRouter::get_json_body(request_handle_t req) {
+
+    auto ct = req->header().try_get_field(restinio::http_field::content_type);
+    if (!ct || *ct != "application/json") {
+        throw nucleus::http_error(status_bad_request(), "Content Type must be application/json (lowercase)");
+    }
+
+    auto body = req->body();
+    if (body.empty()) {
+        throw nucleus::http_error(status_bad_request(), "Body must include json");
+    }
+
+    json jbody = nullptr;
+    try {
+        jbody = json::parse(body);
+    } catch (const std::exception &) {
+        throw nucleus::http_error(status_bad_request(), "JSON Parse error - check correct formatting of JSON");
+    }
+
+    return jbody;
+}
+
+
 
 }
