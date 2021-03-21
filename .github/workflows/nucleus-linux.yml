@@ -19,7 +19,7 @@ name: Build and Test
 # events but only for the master branch
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master, dev, update/202012v2 ]
 
   # *** warning *** - be careful if using runners on own infra on public repos with public pull requests
   pull_request:
@@ -61,6 +61,12 @@ jobs:
 
     - name: test
       run: cmake --build build --target test
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     - name: upload-test-logs CMake Logs
       if: ${{ always() }}
