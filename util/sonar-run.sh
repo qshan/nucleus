@@ -40,7 +40,7 @@ read -t 5 -p "Hit CTRL-C if incorrect or ENTER to continue within 5 seconds..."
 
 build_dir="$PWD"
 cd ..
-~/.sonar/sonar-scanner-4.2.0.1873-linux/bin/sonar-scanner \
+~/.sonar/sonar-scanner-4.4.0.2170-linux/bin/sonar-scanner \
   -Dsonar.host.url=https://sonarcloud.io \
   -Dsonar.organization=axomem \
   -Dsonar.login="$sonar_login" \
