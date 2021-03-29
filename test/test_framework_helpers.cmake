@@ -59,20 +59,24 @@ function(add_test_case name )
 
     message(STATUS "Adding CMAKE test case ${name} for ${APP_NAME} in ${APP_DIR}")
 
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake)
-        # being added from nucleus
-        set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
+    # TODO - move detection to a function and back up cmake_source_dir, prefix (nucleus/app)
+    if (EXISTS ${ARGV1}/test/${name}/test.cmake)
+        set (cmake_source_dir ${ARGV1})
     else()
-        if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake)
-            # being added from higher level project
-            set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+        if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake)
+            # being added from nucleus
+            set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
         else()
-            message(FATAL_ERROR "Cannot find CMAKE file for test case ${name} at"
-                    " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake"
-                    " or ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake")
+            if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake)
+                # being added from higher level project
+                set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+            else()
+                message(FATAL_ERROR "Cannot find CMAKE file for test case ${name} at"
+                        " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake"
+                        " or ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake")
+            endif()
         endif()
     endif()
-
     #message(STATUS "TEST PSD ${PROJECT_SOURCE_DIR} CSD ${CMAKE_SOURCE_DIR} CCSD ${CMAKE_CURRENT_SOURCE_DIR}"
     #               " CLD ${CMAKE_CURRENT_LIST_DIR} NSD ${NUCLEUS_SOURCE_DIR}")
     #message(STATUS "TEST_EXE_EXTRA_START_VARS = ${TEST_EXE_EXTRA_START_VARS}")
@@ -103,26 +107,29 @@ function(add_test_case name )
 
 endfunction()
 
-# Add a python test case
-function(add_test_case_python name )
+# Add a python test case. ARGV1 is optional app_home directory (eg for xPatient), otherwise it will try to find it
+function(add_test_case_python name)
 
     message(STATUS "Adding PYTHON test case ${name} for ${APP_NAME}")
 
     # message(STATUS "Directories ${APP_DIR} ${PROJECT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
-    #                ${NUCLEUS_SOURCE_DIR}")
+    #               ${NUCLEUS_SOURCE_DIR} V1 ${ARGV1}")
 
-    # [1] move detection to a function and back up cmake_source_dir, prefix (nucleus/app)
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py)
-        # being added from nucleus
-        set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
+    if (EXISTS ${ARGV1}/test/${name}/test.py)
+        set (cmake_source_dir ${ARGV1})
     else()
-        if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.py)
-            # being added from higher level project
-            set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+        if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py)
+            # being added from nucleus
+            set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
         else()
-            message(FATAL_ERROR "Cannot find Python file for ${name} at"
-                                " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py"
-                                " or ${CMAKE_SOURCE_DIR}/test/${name}/test.py")
+            if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.py)
+                # being added from higher level project
+                set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+            else()
+                message(FATAL_ERROR "Cannot find Python file for ${name} at"
+                                    " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py"
+                                    " or ${CMAKE_SOURCE_DIR}/test/${name}/test.py")
+            endif()
         endif()
     endif()
 
