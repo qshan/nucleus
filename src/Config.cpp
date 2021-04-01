@@ -34,14 +34,9 @@ void Config::set_name(const std::string& name_arg) {
         throw std::invalid_argument("app_name cannot be empty");
     }
     app_name = name_arg;
+    pool_main_file = fmt::format("./{}.pmem", app_name);
+    log_file = fmt::format("./{}.log", app_name);
 
-#ifndef _WIN32
-    pool_main_file = fmt::format("/var/local/{}/{}.pmem", app_name, app_name);
-    log_file = fmt::format("/var/log/{}.log", app_name);
-#else
-    pool_main_file = fmt::format("{}/{}.pmem", std::filesystem::temp_directory_path().string(), app_name);
-    log_file = fmt::format("{}/{}.log", std::filesystem::temp_directory_path().string(), app_name);
-#endif
 }
 
 Config::Config(const std::string& name_arg)
@@ -256,11 +251,10 @@ int Config::print_help(const std::string& configuration_error) {
     usage << std::endl << "Usage: " << help_app_name << " [OPTIONS]" << std::endl
           << "Available Options:" << std::endl
           << "  -h --help                  This help information. See conf file for more details on arguments." << std::endl
-          << "  --pool_main_file=filename  PMem pool path and name. Default is /var/local/" << help_app_name
-                                           << "/" << help_app_name << ".pmem" << std::endl
+          << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << help_app_name << ".pmem" << std::endl
           << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
-          << "  --log_file=filename        Log file path and name. Default is /var/log/" << help_app_name << ".log" << std::endl
-          << "  --log_level=level          error, warn, info, debug, trace" << std::endl
+          << "  --log_file=filename        Log file path and name. Default is ./" << help_app_name << ".log" << std::endl
+          << "  --log_level=level          error, warn, info, debug, trace. Default is info" << std::endl
           << "  --rest_address=127.0.0.1   ReST Server address in name or IP format (see conf for external access)" << std::endl
           << "  --rest_port=8080           ReST Server port number" << std::endl
           << "  --rest_threads=4           Number of threads for ReST server" << std::endl
