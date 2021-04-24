@@ -1,0 +1,14 @@
+# To see logs - journalctl -u nucleus
+[Unit]
+Description=Nucleus Persistent Memory Server Daemon
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nucleus \
+        --config_file=/etc/nucleus/nucleus.conf \
+        --log_file=/var/log/nucleus.log
+
+[Install]
+WantedBy=multi-user.target
