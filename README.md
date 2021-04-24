@@ -66,9 +66,11 @@ vcpkg integrate install
 vcpkg install libpmemobj-cpp:x64-windows
 
 ```
-Add these options to CMAKE: 
+Add these options to CMAKE, for example in your IDE settings: 
 
-```-DCMAKE_TOOLCHAIN_FILE=d:/app/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows``` 
+`-DCMAKE_TOOLCHAIN_FILE=d:/app/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows -G "Ninja"` 
+
+Alternatively, Visual Studio generator is `-G "Visual Studio 16 2019" -A x64` (slower but different error msgs)
 
 Make sure to get the 64 bit versions and set your compile options to 64 bit too if not using CMAKE.
 

@@ -41,3 +41,20 @@ strleft_utf8(const std::string &str, size_t max_size, const std::string& continu
     // The first byte isn't even a valid UTF-8 starting point
     throw std::invalid_argument("Malformed utf8 encoded text passed to strleft_utf8");
 }
+
+/// @copyright https://github.com/KjellKod/StringFix (Unlicense)
+std::vector<std::string>
+split(const std::string& stringToSplit, const std::string& delimiters) {
+
+    // Skip all the text until the first delimiter is found
+    std::string::size_type start = stringToSplit.find_first_not_of(delimiters, 0);
+    std::string::size_type stop = stringToSplit.find_first_of(delimiters, start);
+
+    std::vector<std::string> tokens;
+    while (std::string::npos != stop || std::string::npos != start) {
+        tokens.push_back(stringToSplit.substr(start, stop - start));
+        start = stringToSplit.find_first_not_of(delimiters, stop);
+        stop = stringToSplit.find_first_of(delimiters, start);
+    }
+    return tokens;
+}
