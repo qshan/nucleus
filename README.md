@@ -204,6 +204,10 @@ There is also a utility file `env.sh` to help mount pmem on server or developmen
 For more information on emulating pmem, see 
 [Creating Development Environments](https://docs.pmem.io/getting-started-guide/creating-development-environments)
 
+For Windows, currently the best solution seems to be to use a regular directory 
+and set environment variable `PMEM_IS_PMEM_FORCE=1`. This is not as fast versus Linux pmem emulation or even tmpfs, but
+is workable on Windows.
+
 ## Installing as a Daemon (server)
 
 ### Linux
