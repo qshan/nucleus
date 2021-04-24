@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see http://www.gnu.org/licenses/
 
-name: Build and Test
+name: Build and Test Linux x64 Ubuntu 20
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
@@ -23,7 +23,7 @@ on:
 
   # *** warning *** - be careful if using runners on own infra on public repos with public pull requests
   pull_request:
-    branches: [ master, dev, integrate/thingbase, fixes/sonar, fixes/documentation ]
+    branches: [ master, dev ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
