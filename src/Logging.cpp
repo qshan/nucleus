@@ -39,10 +39,14 @@ Logging::Logging(const std::string& name, const std::string& log_file, const spd
 
     std::array<spdlog::sink_ptr, 2> sinks {console_sink, file_sink};
 
+    if (LOG_THREADS) {
     // Note - if missing log entries, need to increase these numbers
     spdlog::init_thread_pool(LOG_SLOTS_K, LOG_THREADS);
     mylog = std::make_shared<spdlog::async_logger>(name, sinks.begin(), sinks.end(),
             spdlog::thread_pool(), spdlog::async_overflow_policy::overrun_oldest);
+    } else {
+        mylog = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
+    }
 
     spdlog::register_logger(mylog);
 

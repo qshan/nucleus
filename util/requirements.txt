@@ -1,0 +1,4 @@
+# For Sonar Analysis (login details) and more advanced use in Nucleus+
+# Not required for core test execution
+keyring
+keyrings.alt

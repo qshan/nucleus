@@ -45,7 +45,7 @@ public:
     std::string app_name;
 
     // For logging
-    spdlog::level::level_enum log_level = spdlog::level::debug;
+    spdlog::level::level_enum log_level = spdlog::level::info;
     std::string log_file;
 
     // For PoolManager - main pool file

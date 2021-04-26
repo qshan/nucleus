@@ -23,6 +23,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define ASIO_HEADER_ONLY 1
 #define ASIO_STANDALONE 1
+#define ASIO_DISABLE_NOEXCEPT 1
 
 #include "Platform.hpp"
 #include "restinio/all.hpp"

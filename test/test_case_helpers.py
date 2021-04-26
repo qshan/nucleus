@@ -80,7 +80,7 @@ class test_case_utils:
     @staticmethod
     def get_server_url():
         scheme = "http" if "TEST_SERVER_SCHEME" not in ctest else ctest.TEST_SERVER_SCHEME
-        address = "localhost" if "TEST_SERVER_ADDRESS" not in ctest else ctest.TEST_SERVER_ADDRESS
+        address = "127.0.0.1" if "TEST_SERVER_ADDRESS" not in ctest else ctest.TEST_SERVER_ADDRESS
         port = "8080" if "TEST_SERVER_PORT" not in ctest else ctest.TEST_SERVER_PORT
         return f"{scheme}://{address}:{port}"
 
@@ -107,6 +107,18 @@ class test_case_utils:
         if first == second:
             return True
         else:
-            print(f"\nERROR Response code different: First: {first} {requests.status_codes._codes[first][0]}"
-                  f" | Second: {second} {requests.status_codes._codes[second][0]}\n")
+            print(f"\nERROR Response code different: Got: {first} {requests.status_codes._codes[first][0]}"
+                  f" | Expected: {second} {requests.status_codes._codes[second][0]}\n")
+            return False
+
+    @staticmethod
+    def status_codes_check(response, code_to_check):
+        if response.status_code == code_to_check:
+            return True
+        else:
+            print(f"\nERROR Response code different: "
+                  f"First: {response.status_code} {requests.status_codes._codes[response.status_code][0]}"
+                  f" | Second: {code_to_check} {requests.status_codes._codes[code_to_check][0]}\n"
+                  f"Full Response: {response.text}\n\n")
+
             return False

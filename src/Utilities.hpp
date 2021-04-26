@@ -17,15 +17,19 @@
 #define NUCLEUS_UTILS_HPP
 
 #include <string>
+#include <vector>
+
+
 std::string strleft_utf8(const std::string &str, size_t max_size, const std::string& continuation = "");
 
 // The following functions help make ENUMs with friendly names
-// Source: https://stackoverflow.com/a/52264973
+// @copyright https://stackoverflow.com/a/52264973
+// Note - the comma in the lists comes from the comma at the end of MAKE_ENUM/MAKE_STRINGS
 
 #define MAKE_ENUM(VAR) VAR,
 #define MAKE_STRINGS(VAR) #VAR,
 #define MAKE_ENUM_AND_STRINGS(source, enumName, enumStringName) \
-    enum enumName { \
+    enum class enumName { \
     source(MAKE_ENUM) \
     };\
 const char* const enumStringName[] = { \
@@ -33,5 +37,6 @@ const char* const enumStringName[] = { \
     };
 
 
+std::vector<std::string> split(const std::string& str, const std::string& token);
 
 #endif //NUCLEUS_UTILS_HPP

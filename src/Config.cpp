@@ -254,8 +254,8 @@ int Config::print_help(const std::string& configuration_error) {
           << "  --pool_main_file=filename  PMem pool path and name. Default is ./" << help_app_name << ".pmem" << std::endl
           << "  --pool_main_size=1024      PMem pool initial size in MiB. No effect after first run" << std::endl
           << "  --log_file=filename        Log file path and name. Default is ./" << help_app_name << ".log" << std::endl
-          << "  --log_level=level          error, warn, info, debug, trace" << std::endl
-          << "  --rest_address=localhost   ReST Server address in name or IP format (see conf for external access)" << std::endl
+          << "  --log_level=level          error, warn, info, debug, trace. Default is info" << std::endl
+          << "  --rest_address=127.0.0.1   ReST Server address in name or IP format (see conf for external access)" << std::endl
           << "  --rest_port=8080           ReST Server port number" << std::endl
           << "  --rest_threads=4           Number of threads for ReST server" << std::endl
           << "  --condition_path=filename  Server will exit if this specified path and file doesn't exist" << std::endl

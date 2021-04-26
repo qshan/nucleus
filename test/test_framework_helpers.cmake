@@ -35,7 +35,7 @@ function(nucleus_init nucleus_directory)
         getrandomport(TEST_SERVER_PORT)
         message(STATUS "Nucleus::init allocating new server port ${TEST_SERVER_PORT} ")
     else()
-        message(STATUS "Nucleus::init using existing server port ${TEST_SERVER_PORT} ")
+        # message(STATUS "Nucleus::init using existing server port ${TEST_SERVER_PORT} ")
     endif()
 
     if (NOT TEST_SERVER_SCHEME)
@@ -43,12 +43,12 @@ function(nucleus_init nucleus_directory)
     endif()
 
     if (NOT TEST_SERVER_ADDRESS)
-        set(TEST_SERVER_ADDRESS localhost PARENT_SCOPE)
+        set(TEST_SERVER_ADDRESS 127.0.0.1 PARENT_SCOPE)
     endif()
 
     set(TEST_SERVER_PORT ${TEST_SERVER_PORT} PARENT_SCOPE)
 
-    message(STATUS "Nucleus CMake environment initialised in ${nucleus_directory}")
+    # message(STATUS "Nucleus CMake environment initialised in ${nucleus_directory}")
 
 endfunction()
 
@@ -59,20 +59,24 @@ function(add_test_case name )
 
     message(STATUS "Adding CMAKE test case ${name} for ${APP_NAME} in ${APP_DIR}")
 
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake)
-        # being added from nucleus
-        set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
+    # TODO - move detection to a function and back up cmake_source_dir, prefix (nucleus/app)
+    if (EXISTS ${ARGV1}/test/${name}/test.cmake)
+        set (cmake_source_dir ${ARGV1})
     else()
-        if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake)
-            # being added from higher level project
-            set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+        if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake)
+            # being added from nucleus
+            set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
         else()
-            message(FATAL_ERROR "Cannot find CMAKE file for test case ${name} at"
-                    " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake"
-                    " or ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake")
+            if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake)
+                # being added from higher level project
+                set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+            else()
+                message(FATAL_ERROR "Cannot find CMAKE file for test case ${name} at"
+                        " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.cmake"
+                        " or ${CMAKE_SOURCE_DIR}/test/${name}/test.cmake")
+            endif()
         endif()
     endif()
-
     #message(STATUS "TEST PSD ${PROJECT_SOURCE_DIR} CSD ${CMAKE_SOURCE_DIR} CCSD ${CMAKE_CURRENT_SOURCE_DIR}"
     #               " CLD ${CMAKE_CURRENT_LIST_DIR} NSD ${NUCLEUS_SOURCE_DIR}")
     #message(STATUS "TEST_EXE_EXTRA_START_VARS = ${TEST_EXE_EXTRA_START_VARS}")
@@ -83,6 +87,7 @@ function(add_test_case name )
             COMMAND ${CMAKE_COMMAND}
             -DTEST_ROOT_DIR=${NUCLEUS_SOURCE_DIR}/test
             -DTEST_APP_DIR=${APP_DIR}
+            -DTEST_PMEM_DIRS=${APP_PMEM_DIRS}
             -DTEST_CASE_HELPERS=${NUCLEUS_SOURCE_DIR}/test/test_case_helpers.cmake
             -DTEST_CASE_DIR=${cmake_source_dir}/test/${name}
             -DTEST_NAME=${TEST_NAME}
@@ -98,28 +103,33 @@ function(add_test_case name )
             ${EXTRA_TEST_ARGS}
     )
 
+    set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT PMEM_IS_PMEM_FORCE=1)
+
 endfunction()
 
-# Add a python test case
-function(add_test_case_python name )
+# Add a python test case. ARGV1 is optional app_home directory (eg for xPatient), otherwise it will try to find it
+function(add_test_case_python name)
 
     message(STATUS "Adding PYTHON test case ${name} for ${APP_NAME}")
 
     # message(STATUS "Directories ${APP_DIR} ${PROJECT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}
-    #                ${NUCLEUS_SOURCE_DIR}")
+    #               ${NUCLEUS_SOURCE_DIR} V1 ${ARGV1}")
 
-    # [1] move detection to a function and back up cmake_source_dir, prefix (nucleus/app)
-    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py)
-        # being added from nucleus
-        set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
+    if (EXISTS ${ARGV1}/test/${name}/test.py)
+        set (cmake_source_dir ${ARGV1})
     else()
-        if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.py)
-            # being added from higher level project
-            set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+        if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py)
+            # being added from nucleus
+            set (cmake_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
         else()
-            message(FATAL_ERROR "Cannot find Python file for ${name} at"
-                                " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py"
-                                " or ${CMAKE_SOURCE_DIR}/test/${name}/test.py")
+            if (EXISTS ${CMAKE_SOURCE_DIR}/test/${name}/test.py)
+                # being added from higher level project
+                set (cmake_source_dir ${CMAKE_SOURCE_DIR})
+            else()
+                message(FATAL_ERROR "Cannot find Python file for ${name} at"
+                                    " ${CMAKE_CURRENT_SOURCE_DIR}/test/${name}/test.py"
+                                    " or ${CMAKE_SOURCE_DIR}/test/${name}/test.py")
+            endif()
         endif()
     endif()
 
@@ -131,6 +141,7 @@ function(add_test_case_python name )
             ${Python3_EXECUTABLE} ${cmake_source_dir}/test/${name}/test.py
             -DTEST_ROOT_DIR=${NUCLEUS_SOURCE_DIR}/test
             -DTEST_APP_DIR=${APP_DIR}
+            -DTEST_PMEM_DIRS=${APP_PMEM_DIRS}
             -DTEST_CASE_DIR=${cmake_source_dir}/test/${name}
             -DTEST_NAME=${TEST_NAME}
             -DTEST_EXE=$<TARGET_FILE:${APP_NAME}>
@@ -141,6 +152,8 @@ function(add_test_case_python name )
             -DTEST_EXE_EXTRA_START_VARS="${TEST_EXE_EXTRA_START_VARS}"
             ${EXTRA_TEST_ARGS}
             WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} )
+
+    set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT PMEM_IS_PMEM_FORCE=1)
 
 endfunction()
 

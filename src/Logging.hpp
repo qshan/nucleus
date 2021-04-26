@@ -17,14 +17,16 @@
 #define NUCLEUS_LOGGING_H
 
 // #define SPDLOG_FMT_EXTERNAL
+
 #include "spdlog/spdlog.h"
 #include "Config.hpp"
 
 namespace nucleus {
 
-
+// Change the below to 0 for single threaded while debugging
+constexpr size_t LOG_THREADS = 0;
 constexpr size_t LOG_SLOTS_K = 16 * 1024;
-constexpr size_t LOG_THREADS = 2;
+
 
 // forward declaration
 template<class T>

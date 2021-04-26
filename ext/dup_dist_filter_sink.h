@@ -69,7 +69,7 @@ protected:
         if (skip_counter_ > 0)
         {
             memory_buf_t buf;
-            fmt::format_to(buf, "Skipped {} similar messages to '{}'...", skip_counter_, last_msg_payload_);
+            fmt::format_to(buf, "+--> skipped {} messages similar to '{}'", skip_counter_, last_msg_payload_);
             details::log_msg skipped_msg{last_msg_logger_name_, last_msg_level_, string_view_t{buf.data(), buf.size()}};
             dist_sink<Mutex>::sink_it_(skipped_msg);
         }

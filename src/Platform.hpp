@@ -24,6 +24,8 @@
 
 #define ASIO_HEADER_ONLY 1
 #define ASIO_STANDALONE 1
+#define ASIO_DISABLE_NOEXCEPT 1
+
 #include <asio.hpp>
 
 // Issue with FMT - spdlog and restinio both use?

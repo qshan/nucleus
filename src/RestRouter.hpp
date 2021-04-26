@@ -116,6 +116,7 @@ public:
                 std::move( handler ) );
     }
 
+    static nlohmann::json get_json_body(request_handle_t req);
 
 protected:
 
@@ -133,7 +134,7 @@ protected:
     std::map<std::string, size_t> route_option_map;           // this maps routes to option object ids
     void link_route_options(const restinio::http_method_id_t& method, const std::string& route_path, route_options_t options_arg);
     virtual route_options_t make_route_options(bool custom);
-    virtual route_options_t get_route_options(const req_t& req, const params_t& params);
+    virtual route_options_t get_route_options(size_t option_id);
 
     virtual Session* get_session(const req_t& req, const route_options_t& options);
 
@@ -143,7 +144,8 @@ private:
 
     restinio::request_handling_status_t Request(const restinio::request_handle_t &req,
                                                 const restinio::router::route_params_t &params,
-                                                route_callback_t callback);
+                                                route_callback_t callback,
+                                                size_t option_id);
 
     void RequestStart(const restinio::request_handle_t &req,
                       const route_options_t& options,

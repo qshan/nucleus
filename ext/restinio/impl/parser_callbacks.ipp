@@ -66,9 +66,13 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 		auto * ctx =
 			reinterpret_cast< restinio::impl::http_parser_ctx_t * >( parser->data );
 
+		http_header_fields_t & fields = ctx->m_leading_headers_completed
+				? ctx->m_chunked_info_block.m_trailing_fields
+				: ctx->m_header;
+
 		if( !ctx->m_last_was_value )
 		{
-			ctx->m_header.set_field(
+			fields.add_field(
 				std::move( ctx->m_current_field_name ),
 				std::string{ at, length } );
 
@@ -76,7 +80,7 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 		}
 		else
 		{
-			append_last_field_accessor( ctx->m_header, std::string{ at, length } );
+			append_last_field_accessor( fields, std::string{ at, length } );
 		}
 	}
 	catch( const std::exception & )
@@ -90,15 +94,18 @@ restinio_header_value_cb( http_parser * parser, const char *at, size_t length )
 inline int
 restinio_headers_complete_cb( http_parser * parser )
 {
+	auto * ctx =
+		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
+			parser->data );
+	// Next time header_name/header_value callback should store
+	// values of trailing fields.
+	ctx->m_leading_headers_completed = true;
+
 	if( ULLONG_MAX != parser->content_length &&
 		0 < parser->content_length )
 	{
 		try
 		{
-			auto * ctx =
-				reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
-					parser->data );
-
 			ctx->m_body.reserve(
 					::restinio::utils::impl::uint64_to_size_t(
 							parser->content_length) );
@@ -132,6 +139,45 @@ restinio_body_cb( http_parser * parser, const char *at, size_t length )
 	return 0;
 }
 
+inline int
+restinio_chunk_header_cb( http_parser * parser )
+{
+	try
+	{
+		// In on_chunk_header callback parser->content_length contains
+		// the size of the next chunk.
+		// If that size is 0 then it is the last chunk and it should be
+		// ignored.
+		if( 0u != parser->content_length )
+		{
+			auto * ctx =
+				reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
+					parser->data );
+
+			// Store an info about the new chunk.
+			// If there will be an error at the next stage of parsing
+			// the incoming request the whole request's data will be dropped.
+			// So there is no need to care about that new item in m_chunks.
+			ctx->m_chunked_info_block.m_chunks.emplace_back(
+				ctx->m_body.size(),
+				std::size_t{ parser->content_length } );
+		}
+	}
+	catch( const std::exception & )
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+inline int
+restinio_chunk_complete_cb( http_parser * /*parser*/ )
+{
+	// There is nothing to do.
+	return 0;
+}
+
 template< typename Http_Methods >
 int
 restinio_message_complete_cb( http_parser * parser )
@@ -142,6 +188,14 @@ restinio_message_complete_cb( http_parser * parser )
 	auto * ctx =
 		reinterpret_cast< restinio::impl::http_parser_ctx_t * >(
 			parser->data );
+
+	// Maybe the last trailing header is not handled yet.
+	if( !ctx->m_last_was_value && !ctx->m_current_field_name.empty() )
+	{
+		ctx->m_chunked_info_block.m_trailing_fields.add_field(
+				std::move( ctx->m_current_field_name ),
+				std::string{} );
+	}
 
 	ctx->m_message_complete = true;
 	ctx->m_header.method( Http_Methods::from_nodejs( parser->method ) );

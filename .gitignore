@@ -32,6 +32,7 @@ __pycache__/
 
 # IDE
 .idea
+.vs
 
 # CMAKE
 /cmake-build-*

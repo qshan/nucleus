@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see http://www.gnu.org/licenses/
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
 project(nucleus)
 
 set(NUCLEUS_SOURCE_DIR ${PROJECT_SOURCE_DIR})
@@ -30,8 +30,17 @@ set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
 if(MSVC)
-    add_definitions("/W3" "/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
-    add_compile_options( "$<$<CONFIG:RELEASE>:/O2>")
+    add_definitions("/D _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" "/D _CRT_SECURE_NO_WARNINGS" "/D _WIN32_WINNT=0x0A00")
+    add_compile_options( "$<$<CONFIG:RELEASE>:/O2>" "/MP")
+    if (NOT CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
+        message(STATUS "=== ERROR =========================")
+        message(STATUS "Set VCPKG on command line, ie:" " -DCMAKE_TOOLCHAIN_FILE=d:/app/vcpkg/scripts/buildsystems/vcpkg.cmake"
+                " -DVCPKG_TARGET_TRIPLET=x64-windows" " -G \"Visual Studio 16 2019\"" " -A x64")
+        message(FATAL_ERROR "ToolChain setting missing or not including vcpkg path - ${CMAKE_TOOLCHAIN_FILE}")
+
+    else()
+        message(STATUS "ToolChain file is ${CMAKE_TOOLCHAIN_FILE}")
+    endif()
 else()
     add_definitions("-Wall -Wno-sign-compare" ) # "-Wextra" "-Werror"
     add_compile_options("$<$<CONFIG:RELEASE>:-O3>")
@@ -64,6 +73,7 @@ if (COVERAGE)
 endif()
 
 # Setting default build type
+# Note that for MSBuild need to specify on command line, eg: cmake --build . --config Release
 if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting CMAKE_BUILD_TYPE to DEBUG")
     set(CMAKE_BUILD_TYPE "Debug")
@@ -73,31 +83,39 @@ if(CMAKE_BUILD_TYPE EQUAL DEBUG)
     add_definitions("-g" )  #-g add GDB Native extras
 endif()
 
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
+
 # === Set dependencies =================================================================================================
 
 include(FindThreads)
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig)
 
 set(LIBPMEMOBJ_CPP_REQUIRED_VERSION 1.8)
 set(LIBPMEMOBJ_REQUIRED_VERSION 1.6)
 
 #set (CMAKE_PREFIX_PATH "D:/app/vcpkg/packages/libpmemobj-cpp_x64-windows/share/libpmemobj++")
 
-if(PKG_CONFIG_FOUND)
-    pkg_check_modules(LIBPMEMOBJ++ REQUIRED libpmemobj++>=${LIBPMEMOBJ_CPP_REQUIRED_VERSION})
-    set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
-else()
+#if(PKG_CONFIG_FOUND)
+#    pkg_check_modules(LIBPMEMOBJ++ REQUIRED libpmemobj++>=${LIBPMEMOBJ_CPP_REQUIRED_VERSION})
+#    set (LIBPMEMOBJ++_INCLUDE_DIRS libpmemobj++)  # Seems no auto set var for LIBPMEMOBJ++ include
+#else()
     message(STATUS "libpmemobj++ search without pkg-config (legacy)")
     #find_package(LIBPMEMOBJ++ ${LIBPMEMOBJ_CPP_REQUIRED_VERSION} REQUIRED libpmemobj++)
 
     # from vcpkg...
     find_path(LIBPMEMOBJ_CPP_INCLUDE_DIRS "libpmemobj++/allocation_flag.hpp")
     set (LIBPMEMOBJ++_INCLUDE_DIRS ${LIBPMEMOBJ_CPP_INCLUDE_DIRS})
+	#set (LIBPMEMOBJ++_INCLUDE_DIRS "D:\\app\\vcpkg\\packages\\libpmemobj-cpp_x64-windows\\include"
+	#								"D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\include")
 
     find_library(PMDK_LIBPMEMOBJ_LIBRARY NAMES libpmemobj libpmemobj.so HINTS /usr/local/lib64/)
     set (LIBPMEMOBJ++_LIBRARIES ${PMDK_LIBPMEMOBJ_LIBRARY})
-endif()
+	#set (LIBPMEMOBJ++_LIBRARIES "D:\\app\\vcpkg\\packages\\pmdk_x64-windows\\lib\\libpmemobj.lib")
+	
+#endif()
 
 
 # https://github.com/pmem/libpmemobj-cpp/issues/788
@@ -163,11 +181,12 @@ function(add_target APP_NAME APP_DIR APP_SOURCES APP_INCLUDE_DIRS APP_LIBRARIES)
                                       ${LIBPMEMOBJ++_LIBRARIES}
                                       ${CMAKE_THREAD_LIBS_INIT} )
 
+
     # Copy the target to the bin directory post build for easier use
-    add_custom_command(TARGET ${APP_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
-    )
+    #add_custom_command(TARGET ${APP_NAME} POST_BUILD
+    #        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/bin/
+    #        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${APP_NAME}> ${CMAKE_SOURCE_DIR}/bin/
+    #)
 
     add_common_tests()
 
@@ -332,9 +351,20 @@ add_custom_target(docs
 )
 
 add_custom_target(check
-        # issue here - parallel builds
-        # message(STATUS "Building and Testing targets" "${NUCLEUS_ALL_TARGETS}")
-        # COMMAND ${CMAKE_COMMAND} --parallel --build .
-        COMMAND ${CMAKE_COMMAND} --build . --target test
+        #COMMAND ${CMAKE_COMMAND} --build .
+        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE}
         DEPENDS ${NUCLEUS_ALL_TARGETS}
 )
+
+add_custom_target(checkfailed
+        #COMMAND ${CMAKE_COMMAND} --build .
+        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C ${CMAKE_BUILD_TYPE} --rerun-failed
+        DEPENDS ${NUCLEUS_ALL_TARGETS}
+)
+
+message (STATUS "=== CONFIGURATION DONE =======================================")
+message(STATUS "CMAKE_BUILD_TYPE default is ${CMAKE_BUILD_TYPE}")
+if (WIN32)
+    message(STATUS "To compile, use:   cmake --build . [--config Debug|Release]")
+endif()
+message (STATUS "==============================================================")
