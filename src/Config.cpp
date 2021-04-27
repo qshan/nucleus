@@ -18,6 +18,9 @@
 #include <regex>
 #include <functional>
 #include <filesystem>
+#include <algorithm>
+#include <cctype>
+#include <string>
 #include "Config.hpp"
 
 // TODO - add further validation to provided values
@@ -89,7 +92,13 @@ Config::handler(const std::string& section, const std::string& name, const std::
 
     if (check_match("","log_file")) { log_file = value; }
 
-    if (check_match("","log_level")) { log_level = spdlog::level::from_str(value); }
+    if (check_match("","log_level")) {
+        std::string loglvl = value;
+        std::transform(loglvl.begin(), loglvl.end(), loglvl.begin(), [](unsigned char c) {
+            return std::tolower(c);
+        });
+        log_level = spdlog::level::from_str(loglvl);
+    }
 
     if (check_match("","pool_main_file")) { pool_main_file = value; }
 
@@ -259,6 +268,7 @@ int Config::print_help(const std::string& configuration_error) {
           << "  --rest_port=8080           ReST Server port number" << std::endl
           << "  --rest_threads=4           Number of threads for ReST server" << std::endl
           << "  --condition_path=filename  Server will exit if this specified path and file doesn't exist" << std::endl
+          << "  --config_file=filename     Use a particular configuration, eg. --config_file=nucleus.conf" << std::endl
           << std::endl;
 
     if (configuration_error == "HELP") {
