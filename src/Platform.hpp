@@ -48,6 +48,7 @@
 #include <libpmemobj++/container/string.hpp>
 #include <libpmemobj++/utils.hpp>
 #include <libpmemobj++/experimental/v.hpp>
+#include <libpmemobj++/experimental/inline_string.hpp>
 
 // Nucleus common includes
 #include "Logging.hpp"
@@ -100,7 +101,6 @@ private:
     std::string message;
 
 };
-
 
 }
 

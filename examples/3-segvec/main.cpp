@@ -28,10 +28,16 @@ main(int argc, char *argv[]) {
         Basebench B1;
         B1.Shuffle(); 
         B1.Sort(); 
-        auto Res1 = B1.BinSearch("pickedevant");
-        std::cout << "\nBinary Search result => " << Res1 << "\n";
-        auto Res2 = B1.SeqSearch("pickedevant");
-        std::cout << "\nSequential Search result => " << Res2 << "\n";
+        auto Res1 = B1.BinSearch("elfstedentocht");
+        std::cout << "Binary Search result => " << Res1 << "\n";
+        auto Res2 = B1.SeqSearch("elfstedentocht");
+        std::cout << "Sequential Search result => " << Res2 << "\n\n";
+        auto Res3 = B1.BinSearch("pickedevant");
+        std::cout << "Binary Search result => " << Res3 << "\n";
+        auto Res4 = B1.SeqSearch("pickedevant");
+        std::cout << "Sequential Search result => " << Res4 << "\n\n";
+        auto Res5 = B1.SeqSearch("yayapapaya");
+        std::cout << "Sequential Search result => " << Res5 << "\n";
         return 0; 
     }
 
@@ -50,3 +56,4 @@ main(int argc, char *argv[]) {
 
     return nucleus::Nucleus<SubClass>(&ctx).Run();
 }
+

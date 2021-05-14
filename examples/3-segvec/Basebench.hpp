@@ -14,7 +14,7 @@
 
 namespace nucleus::examples::subclass {
 
-const std::string filename = "C:\\Users\\HughTay\\Downloads\\wlist_match1.txt";
+const std::string filename = "/home/hughty/nucleus/bin/wlist_match1.txt";
 
 class Basebench {
 public:

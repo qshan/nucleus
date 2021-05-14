@@ -25,9 +25,13 @@ Segvecs::~Segvecs() {
 
     ctx.get()->log->debug("Segvecs Persistent Destructor called");
 
-    auto pop = pmem::obj::pool_by_pptr(p_wordlist);
-    pmem::obj::transaction::run(pop, [this] {
+    auto pop1 = pmem::obj::pool_by_pptr(p_wordlist);
+    pmem::obj::transaction::run(pop1, [this] {
         pmem::obj::delete_persistent<pmem::obj::segment_vector<pmem::obj::string>>(p_wordlist);
+    });
+    auto pop2 = pmem::obj::pool_by_pptr(p_inlinelist);
+    pmem::obj::transaction::run(pop1, [this] {
+        pmem::obj::delete_persistent<pmem::obj::segment_vector<pmem::obj::string>>(p_inlinelist);
     });
 
 }
@@ -36,27 +40,51 @@ void
 Segvecs::Initialize(const CTX& ctx_arg) {
 
     ctx = ctx_arg; 
-
-    ctx.get()->log->info("READ WORD LIST INTO SEGMENT VECTOR"); 
-    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now(); 
-
-    auto pop = pmem::obj::pool_by_pptr(p_wordlist);
-    pmem::obj::transaction::run(pop, [this] {
-
-        std::string line; 
-        std::ifstream infile(filename); 
-
-        while (std::getline(infile, line)) { 
-            //auto temp = make_persistent<pmem::obj::string>(line); 
-            p_wordlist->emplace_back(line); 
-        }
-
-    });
-
-    std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
-    std::stringstream ss;
-    ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop-start).count() << " ms."; 
-    ctx.get()->log->info(ss.str()); 
+    {
+        ctx.get()->log->info("READ WORD LIST INTO SEGMENT VECTOR"); 
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now(); 
+    
+        auto pop = pmem::obj::pool_by_pptr(p_wordlist);
+        pmem::obj::transaction::run(pop, [this] {
+    
+            std::string line; 
+            std::ifstream infile(filename); 
+    
+            while (std::getline(infile, line)) { 
+                //auto temp = make_persistent<pmem::obj::string>(line); 
+                p_wordlist->emplace_back(line); 
+            }
+    
+        });
+    
+        std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
+        std::stringstream ss;
+        ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop-start).count() << " ms."; 
+        ctx.get()->log->info(ss.str()); 
+    }
+    /*{
+        ctx.get()->log->info("READ WORD LIST INTO SEGMENT VECTOR <INLINE>"); 
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now(); 
+        
+        auto pop = pmem::obj::pool_by_pptr(p_inlinelist);
+        pmem::obj::transaction::run(pop, [this] {
+    
+            std::string line; 
+            std::ifstream infile(filename); 
+    
+            while (std::getline(infile, line)) { 
+                pmem::obj::experimental::inline_string S(line.length()+sizeof('\0')); 
+                S.assign(line); 
+                p_inlinelist->emplace_back(S.data()); 
+            }
+    
+        });
+    
+        std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
+        std::stringstream ss;
+        ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop-start).count() << " ms."; 
+        ctx.get()->log->info(ss.str()); 
+    }*/
 }
 
 void
@@ -72,82 +100,151 @@ Segvecs::Start(const CTX& ctx_arg) {
 
     ctx.get()->rest_server->routes()->add(http_method_get(), R"(/api/v1/app/Segvecs/Binsearch/:query)",
         [this](const auto &req, const auto& params, auto &resp) {
-
-        ctx.get()->log->info("BINARY SEARCH WORD LIST");
-        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-
-        std::string query = restinio::cast_to<std::string>(params["query"]);
-
-        long long Res = -1;
-        auto it = std::lower_bound(p_wordlist->begin(), p_wordlist->end(), query);
-        if (it == p_wordlist->end() || *it != query) {
-            Res = -1;
-        } else {
-            Res = std::distance(p_wordlist->begin(), it);
+        
+        {
+            ctx.get()->log->info("BINARY SEARCH WORD LIST");
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    
+            std::string query = restinio::cast_to<std::string>(params["query"]);
+    
+            long long Res = -1;
+            auto it = std::lower_bound(p_wordlist->begin(), p_wordlist->end(), query);
+            if (it == p_wordlist->end() || *it != query) {
+                Res = -1;
+            } else {
+                Res = std::distance(p_wordlist->begin(), it);
+            }
+    
+            resp["data"]["query_index"] = std::to_string(Res);
+    
+            std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
+            std::stringstream ss;
+            ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::microseconds>(stop-start).count() << " us.";
+            ctx.get()->log->info(ss.str());
         }
-
-        resp["data"]["query_index"] = std::to_string(Res);
-
-        std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
-        std::stringstream ss;
-        ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::microseconds>(stop-start).count() << " us.";
-        ctx.get()->log->info(ss.str());
-
+        /*{
+            ctx.get()->log->info("BINARY SEARCH WORD LIST <INLINE>");
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    
+            std::string query = restinio::cast_to<std::string>(params["query"]);
+    
+            long long Res = -1;
+            auto it = std::lower_bound(p_inlinelist->begin(), p_inlinelist->end(), query);
+            if (it == p_inlinelist->end() || *it != query) {
+                Res = -1;
+            } else {
+                Res = std::distance(p_inlinelist->begin(), it);
+            }
+    
+            resp["data"]["query_index"] = std::to_string(Res);
+    
+            std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
+            std::stringstream ss;
+            ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::microseconds>(stop-start).count() << " us.";
+            ctx.get()->log->info(ss.str());
+        }*/
         return status_ok();
 
     });
 
     ctx.get()->rest_server->routes()->add(http_method_get(), R"(/api/v1/app/Segvecs/Seqsearch/:query)",
         [this](const auto &req, const auto& params, auto &resp) {
-
-        ctx.get()->log->info("SEQUENTIAL SEARCH WORD LIST");
-        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-
-        std::string query = restinio::cast_to<std::string>(params["query"]);
-
-        long long Res = -1;
-        for (auto it = p_wordlist->begin(); it != p_wordlist->end(); ++it) {
-            if (*it == query) {
-                Res = std::distance(p_wordlist->begin(), it);
-                break;
+        
+        {
+            ctx.get()->log->info("SEQUENTIAL SEARCH WORD LIST");
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    
+            std::string query = restinio::cast_to<std::string>(params["query"]);
+    
+            long long Res = -1;
+            for (auto it = p_wordlist->begin(); it != p_wordlist->end(); ++it) {
+                if (*it == query) {
+                    Res = std::distance(p_wordlist->begin(), it);
+                    break;
+                }
             }
+    
+            resp["data"]["query_index"] = std::to_string(Res);
+    
+            std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
+            std::stringstream ss;
+            ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::microseconds>(stop-start).count() << " us.";
+            ctx.get()->log->info(ss.str());
         }
-
-        resp["data"]["query_index"] = std::to_string(Res);
-
-        std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
-        std::stringstream ss;
-        ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::microseconds>(stop-start).count() << " us.";
-        ctx.get()->log->info(ss.str());
-
+        /*{
+            ctx.get()->log->info("SEQUENTIAL SEARCH WORD LIST <INLINE>");
+            std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+    
+            std::string query = restinio::cast_to<std::string>(params["query"]);
+    
+            long long Res = -1;
+            for (auto it = p_inlinelist->begin(); it != p_inlinelist->end(); ++it) {
+                if (*it == query) {
+                    Res = std::distance(p_inlinelist->begin(), it);
+                    break;
+                }
+            }
+    
+            resp["data"]["query_index"] = std::to_string(Res);
+    
+            std::chrono::steady_clock::time_point stop  = std::chrono::steady_clock::now();
+            std::stringstream ss;
+            ss << "TIME TAKEN = " << std::chrono::duration_cast<std::chrono::microseconds>(stop-start).count() << " us.";
+            ctx.get()->log->info(ss.str());
+        }*/
         return status_ok();
 
         });
 
     ctx.get()->rest_server->routes()->add(http_method_post(), R"(/api/v1/app/Segvecs/addentry)",
             [this](const auto &req, auto &resp) {
-
-        ctx.get()->log->trace("Segvecs adding new entry.");
-
-        auto j_req = json::parse(req->body());
-        std::string entrynew = restinio::cast_to<std::string>(j_req["entry"]);
-
-        if (j_req["entry"].template get<std::string>().empty()) {
-            throw http_error(status_bad_request(), "New entry empty! =(");
+        {
+            ctx.get()->log->trace("Segvecs adding new entry.");
+    
+            auto j_req = json::parse(req->body());
+            std::string entrynew = j_req["entry"];
+    
+            if (j_req["entry"].template get<std::string>().empty()) {
+                throw http_error(status_bad_request(), "New entry empty! =(");
+            }
+    
+            auto pop = pmem::obj::pool_by_pptr(p_wordlist);
+            pmem::obj::transaction::run(pop, [this, &j_req] {
+    
+                std::string temp = j_req["entry"];
+                ctx.get()->log->trace(temp);
+                p_wordlist->emplace_back(temp);
+    
+            });
+    
+            std::string resmsg = "Segvec updated with "+entrynew+"! =)";
+            resp["response"]["message"] = fmt::format(resmsg);
         }
-
-        auto pop = pmem::obj::pool_by_pptr(p_wordlist);
-        pmem::obj::transaction::run(pop, [this, &j_req] {
-
-            std::string temp = restinio::cast_to<std::string>(j_req["entry"]);
-            ctx.get()->log->trace(temp);
-            p_wordlist->emplace_back(temp);
-
-        });
-
-        std::string resmsg = "Segvec updated with "+entrynew+"! =)";
-        resp["response"]["message"] = fmt::format(resmsg);
-
+        /*{
+            ctx.get()->log->trace("Segvecs adding new entry.");
+    
+            auto j_req = json::parse(req->body());
+            std::string entrynew = j_req["entry"];
+    
+            if (j_req["entry"].template get<std::string>().empty()) {
+                throw http_error(status_bad_request(), "New entry empty! =(");
+            }
+    
+            auto pop = pmem::obj::pool_by_pptr(p_inlinelist);
+            pmem::obj::transaction::run(pop, [this, &j_req] {
+    
+                std::string temp = j_req["entry"];
+                ctx.get()->log->trace(temp);
+                
+                pmem::obj::experimental::inline_string S(temp.length()+sizeof('\0')); 
+                S.assign(temp); 
+                p_inlinelist->emplace_back(S.data()); 
+    
+            });
+    
+            std::string resmsg = "Segvec updated with "+entrynew+"! =)";
+            resp["response"]["message"] = fmt::format(resmsg);
+        }*/
         return status_created();
 
     });

@@ -50,7 +50,9 @@ private:
     pmem::obj::persistent_ptr<pmem::obj::segment_vector<pmem::obj::string>> p_wordlist {
         pmem::obj::make_persistent<pmem::obj::segment_vector<pmem::obj::string>>()
     };
-
+    pmem::obj::persistent_ptr<pmem::obj::segment_vector<pmem::obj::string>> p_inlinelist {
+        pmem::obj::make_persistent<pmem::obj::segment_vector<pmem::obj::string>>()
+    };
     // Server Context
     pmem::obj::experimental::v<CTX> ctx;
 
