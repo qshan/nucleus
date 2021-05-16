@@ -15,7 +15,7 @@ execute_process(
                 --log_file=${TEST_OUT_DIR}/nucleus.log
                 --log_level=trace
                 --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-                --pool_main_size=10
+                --pool_main_size=32
                 --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
                 --condition_path=${NUCLEUS_CONDITION_PATH}
                 ${TEST_EXE_EXTRA_START_VARS}

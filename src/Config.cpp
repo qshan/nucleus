@@ -104,8 +104,8 @@ Config::handler(const std::string& section, const std::string& name, const std::
 
     if (check_match("","pool_main_size")) {
         pool_main_size = (size_t) std::stol(value) * 1024 * 1024;
-        if (pool_main_size < 8 * 1024 * 1024) { // PMEMOBJ_MIN_POOL
-            throw std::invalid_argument("Minimum pool size is 8MiB");
+        if (pool_main_size < 16 * 1024 * 1024) { // PMEMOBJ_MIN_POOL
+            throw std::invalid_argument("Minimum pool size is 16MiB");
         }
     }
 

@@ -66,7 +66,7 @@ execute_process(
         COMMAND ${TEST_EXE}
         --config_file=${TEST_CASE_DIR}/nucleus.conf
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
@@ -84,7 +84,7 @@ execute_process(
         COMMAND ${TEST_EXE}
         --config_file=${TEST_CASE_DIR}/nucleus-error.conf
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
@@ -100,7 +100,7 @@ test_case_check("Invalid config file")
 execute_process(
         COMMAND ${TEST_EXE}
         --pool_main_file=/invalid/path/to/pool/file/name.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
         --condition_path=/tmp/thisfileshouldnotexist
@@ -116,7 +116,7 @@ test_case_check("Invalid pool file name")
 execute_process(
         COMMAND ${TEST_EXE}
         --pool_main_file=/dev/null/pool_file.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
         --condition_path=/tmp/thisfileshouldnotexist
@@ -141,7 +141,7 @@ execute_process(
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
         --pool_main_file=${ROOT_FILE_CHECK_DIR}/nucleus_test_root_pool_file.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --condition_path=/tmp/thisfileshouldnotexist
         ${TEST_EXE_EXTRA_START_VARS}
         COMMAND_ECHO STDOUT
@@ -174,7 +174,7 @@ execute_process(
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_port=100000
         --condition_path=/tmp/thisfileshouldnotexist
         ${TEST_EXE_EXTRA_START_VARS}
@@ -191,7 +191,7 @@ execute_process(
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_disable=true
         --rest_disable=0
         --rest_disable=unknown
@@ -208,7 +208,7 @@ test_case_check("Check disable REST invalid option")  # new test case? Check rea
 execute_process(
         COMMAND ${TEST_EXE}
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
         --log_file=${TEST_OUT_DIR}/nucleus${TEST_SUBCASE_NUMBER}.log
         --log_level=trace

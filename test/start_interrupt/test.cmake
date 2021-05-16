@@ -19,7 +19,7 @@ execute_process(
         --log_file=${TEST_OUT_DIR}/nucleus-background.log
         --log_level=trace
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_address=${TEST_SERVER_ADDRESS}  --rest_port=${TEST_SERVER_PORT}
         ${TEST_EXE_EXTRA_START_VARS}
         COMMAND_ECHO STDOUT
@@ -75,7 +75,7 @@ execute_process(
         --log_file=${TEST_OUT_DIR}/nucleus-retest.log
         --log_level=debug
         --pool_main_file=${TEST_PMEM_DIR}/${TEST_NAME}.pmem
-        --pool_main_size=10
+        --pool_main_size=32
         --rest_address=${TEST_SERVER_ADDRESS} --rest_port=${TEST_SERVER_PORT}
         --condition_path=/tmp/thisfileshouldnotexist
         ${TEST_EXE_EXTRA_START_VARS}
