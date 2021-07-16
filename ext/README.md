@@ -4,12 +4,12 @@ We are grateful for the contributions authors have made to providing these libra
 
 | Library | Source | Release* | Commit | Upd* |
 | ------- | ------- | ------ | -------| -------|
-RESTINIO | https://github.com/Stiffstream/restinio | v.0.6.9 | c34f83a68e60537eba52e2d076ed22495ad4c5df |*| 
+RESTINIO | https://github.com/Stiffstream/restinio | v.0.6.13 | 0052518f5692f8f051031e06d933b726191be97e |*| 
 HTTP_PARSER | https://github.com/nodejs/http-parser | 2.9.4 | 2343fd6b5214b2ded2cdcf76de2bf60903bb90cd |-|
-ASIO | https://github.com/chriskohlhoff/asio | 1.18.0 | be7badc31abcc395cf868de6a1e240c2350bdbf2 |*|
-JSON.HPP | https://github.com/nlohmann/json | v3.9.1 | db78ac1d7716f56fc9f1b030b715f872f93964e4 |*|
-SPDLOG | https://github.com/gabime/spdlog |  v1.8.1 | cbe9448650176797739dbab13961ef4c07f4290f |*| 
-FMT | https://github.com/fmtlib/fmt | 7.0.3 | 19bd751020a1f3c3363b2eb67a039852f139a8d3 |*| 
+ASIO | https://github.com/chriskohlhoff/asio | 1.19.1 | 4c5a7cca62cb4354de08298e868bea54bfd6692b |*|
+JSON.HPP | https://github.com/nlohmann/json | v3.9.1 | db78ac1d7716f56fc9f1b030b715f872f93964e4 |-|
+SPDLOG | https://github.com/gabime/spdlog |  v1.8.5 | 100f30043f33277122e0991c83845a2617172ffd |*| 
+FMT | https://github.com/fmtlib/fmt | 7.1.3 | 7bdf0628b1276379886c7f6dda2cef2b3b374f0b |*|
 
 \* In Release, \>\> indicates a later commit was taken than the release to resolve issues or use latest at sync
 
@@ -54,4 +54,7 @@ Note: On Fedora, ASIO is packaged with Boost. Avoiding using OS package managers
 
 ### FMT
 1. Per general update process above
-3. extract include/fmt into ext/fmt
+2. extract include/fmt into ext/fmt
+Note: There are still issues with spdlog with v8 of fmt. https://github.com/gabime/spdlog/issues/1975
+   
+   
